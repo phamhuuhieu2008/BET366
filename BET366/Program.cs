@@ -30,53 +30,80 @@ builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
 
+// Check for migration flag
+if (args.Contains("--migrate"))
+{
+    using (var scope = app.Services.CreateScope())
+    {
+        var sqlServerConn = "Server=(localdb)\\MSSQLLocalDB;Database=BET366DB;Trusted_Connection=True;TrustServerCertificate=True;";
+        var pgConn = builder.Configuration.GetConnectionString("DefaultConnection");
+        await BET366.Utilities.DataMigrator.MigrateData(sqlServerConn, pgConn);
+    }
+    return; // Exit after migration
+}
+
 // Auto-migrate and Seed Data
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     var db = services.GetRequiredService<ApplicationDbContext>();
     
-    // Fix Database Schema if needed
+    // Fix Database Schema if needed (PostgreSQL syntax)
     try {
-        db.Database.ExecuteSqlRaw("IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Users]') AND name = 'UserStatus') BEGIN ALTER TABLE [Users] ADD [UserStatus] INT NOT NULL DEFAULT 2; END");
-        db.Database.ExecuteSqlRaw("IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Users]') AND name = 'IsLocked') BEGIN ALTER TABLE [Users] DROP COLUMN [IsLocked]; END");
-        db.Database.ExecuteSqlRaw("IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Users]') AND name = 'Role') BEGIN ALTER TABLE [Users] DROP COLUMN [Role]; END");
-        
-        // Fix for Deposit table missing SenderName
-        db.Database.ExecuteSqlRaw("IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Deposits]') AND name = 'SenderName') BEGIN ALTER TABLE [Deposits] ADD [SenderName] NVARCHAR(100) NULL; END");
+        db.Database.ExecuteSqlRaw(@"
+            DO $$ 
+            BEGIN 
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='Users' AND column_name='UserStatus') THEN 
+                    ALTER TABLE ""Users"" ADD COLUMN ""UserStatus"" INTEGER NOT NULL DEFAULT 2; 
+                END IF; 
+            END $$;");
+
+        db.Database.ExecuteSqlRaw(@"
+            DO $$ 
+            BEGIN 
+                IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='Users' AND column_name='IsLocked') THEN 
+                    ALTER TABLE ""Users"" DROP COLUMN ""IsLocked""; 
+                END IF; 
+            END $$;");
+
+        db.Database.ExecuteSqlRaw(@"
+            DO $$ 
+            BEGIN 
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='Deposits' AND column_name='SenderName') THEN 
+                    ALTER TABLE ""Deposits"" ADD COLUMN ""SenderName"" VARCHAR(100) NULL; 
+                END IF; 
+            END $$;");
         
         // SlotHistories Table
         try {
             db.Database.ExecuteSqlRaw(@"
-                IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[SlotHistories]') AND type in (N'U'))
-                BEGIN
-                    CREATE TABLE [SlotHistories] (
-                        [Id] INT IDENTITY(1,1) NOT NULL,
-                        [UserId] INT NOT NULL,
-                        [BetAmount] BIGINT NOT NULL,
-                        [ResultGrid] NVARCHAR(MAX) NOT NULL,
-                        [WinAmount] BIGINT NOT NULL,
-                        [IsJackpot] BIT NOT NULL,
-                        [CreatedAt] DATETIME2 NOT NULL DEFAULT GETDATE(),
-                        CONSTRAINT [PK_SlotHistories] PRIMARY KEY ([Id]),
-                        CONSTRAINT [FK_SlotHistories_Users_UserId] FOREIGN KEY ([UserId]) REFERENCES [Users] ([Id]) ON DELETE CASCADE
-                    );
-                END");
+                CREATE TABLE IF NOT EXISTS ""SlotHistories"" (
+                    ""Id"" SERIAL PRIMARY KEY,
+                    ""UserId"" INTEGER NOT NULL REFERENCES ""Users""(""Id"") ON DELETE CASCADE,
+                    ""BetAmount"" BIGINT NOT NULL,
+                    ""ResultGrid"" TEXT NOT NULL,
+                    ""WinAmount"" BIGINT NOT NULL,
+                    ""IsJackpot"" BOOLEAN NOT NULL,
+                    ""CreatedAt"" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                );");
         } catch { }
 
         // Jackpot Config
         try {
-            db.Database.ExecuteSqlRaw("IF NOT EXISTS (SELECT * FROM [SystemConfigs] WHERE [ConfigKey] = 'JackpotValue') BEGIN INSERT INTO [SystemConfigs] (ConfigKey, ConfigValue, Description, UpdatedAt) VALUES ('JackpotValue', '100000000', 'Giá trị nổ hũ', GETDATE()); END");
+            db.Database.ExecuteSqlRaw(@"
+                INSERT INTO ""SystemConfigs"" (""ConfigKey"", ""ConfigValue"", ""Description"", ""UpdatedAt"") 
+                SELECT 'JackpotValue', '100000000', 'Giá trị nổ hũ', CURRENT_TIMESTAMP
+                WHERE NOT EXISTS (SELECT 1 FROM ""SystemConfigs"" WHERE ""ConfigKey"" = 'JackpotValue');");
         } catch { }
     } catch (Exception ex) { Console.WriteLine("⚠️ DB Patch error: " + ex.Message); }
     
     try 
     {
-        db.Database.Migrate();
+        db.Database.EnsureCreated(); // Ensure schema exists for new DB
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"⚠️ EF Migration warning (can be ignored if schema is patched): {ex.Message}");
+        Console.WriteLine($"⚠️ DB EnsureCreated warning: {ex.Message}");
     }
     
     try

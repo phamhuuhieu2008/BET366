@@ -459,5 +459,8 @@ c:\Users\ADMIN\Downloads\BET366\BET366\obj\Debug\net9.0\swae.build.ex.cache
 c:\Users\ADMIN\Downloads\BET366\BET366\obj\Debug\net9.0\BET366.csproj.Up2Date
 c:\Users\ADMIN\Downloads\BET366\BET366\obj\Debug\net9.0\BET366.genruntimeconfig.cache
 c:\Users\ADMIN\Downloads\BET366\BET366\obj\Debug\net9.0\ref\BET366.dll
-C:\Users\ADMIN\Downloads\BET366\BET366\obj\Debug\net9.0\compressed\jtp2u2rxr0-{0}-nykj148ust-nykj148ust.gz
-C:\Users\ADMIN\Downloads\BET366\BET366\obj\Debug\net9.0\compressed\3i00nigyqz-{0}-5ubfxnlg8m-5ubfxnlg8m.gz
+C:\Users\ADMIN\Downloads\BET366\BET366\bin\Debug\net9.0\Npgsql.dll
+C:\Users\ADMIN\Downloads\BET366\BET366\bin\Debug\net9.0\Npgsql.EntityFrameworkCore.PostgreSQL.dll
+C:\Users\ADMIN\Downloads\BET366\BET366\obj\Debug\net9.0\BET366.sourcelink.json
+C:\Users\ADMIN\Downloads\BET366\BET366\obj\Debug\net9.0\compressed\jtp2u2rxr0-{0}-9bvjh2dchj-9bvjh2dchj.gz
+C:\Users\ADMIN\Downloads\BET366\BET366\obj\Debug\net9.0\compressed\3i00nigyqz-{0}-fsv9j4bq73-fsv9j4bq73.gz
