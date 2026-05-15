@@ -66,7 +66,7 @@ body::before {
 @keyframes pulseEmerald { 0% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(46, 204, 113, 0); } 100% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); } }
 
 /* Marquee Notification */
-.marquee-container {
+.marquee-bar {
     background: rgba(0, 0, 0, 0.5); border-top: 1px solid rgba(191,149,63,0.2); border-bottom: 1px solid rgba(191,149,63,0.2);
     overflow: hidden; white-space: nowrap; padding: 4px 0; display: flex; align-items: center;
 }
@@ -75,11 +75,17 @@ body::before {
 
 /* Bottom Dock */
 .bottom-dock {
-    position: fixed; bottom: 10px; left: 10px; right: 10px;
-    background: rgba(10, 10, 11, 0.85); backdrop-filter: blur(20px);
-    border: 1px solid rgba(255,255,255,0.1); border-radius: 30px;
-    display: flex; justify-content: space-around; align-items: center; padding: 5px 10px; z-index: 100;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+    position: fixed; bottom: 15px; left: 15px; right: 15px;
+    background: rgba(15, 15, 18, 0.7); backdrop-filter: blur(25px) saturate(180%);
+    border: 1px solid rgba(255,255,255,0.08); border-radius: 35px;
+    display: flex; justify-content: space-around; align-items: center; padding: 8px 15px; z-index: 100;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.9), inset 0 1px 1px rgba(255,255,255,0.1);
+    animation: slideUpDock 0.8s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
+@keyframes slideUpDock {
+    from { transform: translateY(100px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
 }
 .dock-btn-center {
     width: 60px; height: 60px; border-radius: 50%;
@@ -95,26 +101,66 @@ body::before {
 .haptic-btn:active { transform: scale(0.9); }
 
 /* Game Grid Cards */
-.game-card {
-    background: #111; border-radius: 20px;
-    border: 1.5px solid transparent;
-    background-clip: padding-box;
-    position: relative; overflow: visible;
-    transition: all 0.2s;
+.game-grid {
+    perspective: 1200px;
 }
-.game-card::before {
-    content: ''; position: absolute; inset: -1.5px; border-radius: 21.5px;
-    background: var(--gold-gradient); z-index: -1;
+
+.modal-content {
+    background: linear-gradient(180deg, rgba(30, 30, 35, 0.95) 0%, rgba(10, 10, 12, 0.98) 100%);
+    backdrop-filter: blur(30px) saturate(150%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 40px 100px rgba(0,0,0,1), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+    border-radius: 40px;
+    transform: perspective(1000px) rotateX(2deg);
+    transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
 }
-.game-card:active { transform: scale(0.95); }
-.game-thumb {
-    width: 100%; height: 120px; object-fit: cover; border-radius: 18px 18px 0 0;
-    transform: scale(1.05) translateY(-5px); /* Tràn viền */
+
+.bet-btn-3d {
+    background: linear-gradient(180deg, #2a2a2a 0%, #151515 100%);
+    border: 1px solid rgba(255,255,255,0.05);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    border-radius: 20px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 15px;
+    cursor: pointer;
 }
-.game-ribbon {
-    position: absolute; top: -5px; left: -5px; background: var(--tai-red);
-    color: white; font-size: 9px; font-weight: 900; padding: 2px 8px; border-radius: 10px 0 10px 0;
-    box-shadow: 0 2px 5px rgba(231, 76, 60, 0.5);
+.bet-btn-3d:active { transform: translateY(2px) scale(0.98); box-shadow: 0 2px 5px rgba(0,0,0,0.8); }
+.bet-btn-3d.active { border-color: #fbbf24; background: linear-gradient(180deg, #3a3a3a 0%, #202020 100%); box-shadow: 0 0 20px rgba(251, 191, 36, 0.2); }
+
+.game-card-mini {
+    background: linear-gradient(145deg, #1a1a1a, #0a0a0b);
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.05);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.1);
+    position: relative; overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+    transform-style: preserve-3d;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 10px;
+    height: 110px;
+}
+.game-card-mini:hover { 
+    transform: translateY(-5px); 
+    border-color: rgba(212, 175, 55, 0.6); 
+    box-shadow: 0 15px 30px rgba(0,0,0,0.8), 0 0 15px rgba(212, 175, 55, 0.2);
+}
+.game-card-mini:active { transform: scale(0.96) translateY(0); }
+
+.mini-icon {
+    font-size: 2rem;
+    filter: drop-shadow(0 5px 10px rgba(0,0,0,0.5));
+    transition: transform 0.3s ease;
+}
+.game-card-mini:hover .mini-icon { transform: scale(1.15); }
+
+.game-ribbon-mini {
+    position: absolute; top: 8px; right: -25px;
+    background: #ef4444; color: white; font-size: 7px; font-weight: 900;
+    padding: 2px 25px; transform: rotate(45deg);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+    letter-spacing: 1px;
 }
 
 .gold-gradient-text {
@@ -148,14 +194,23 @@ body::before {
 
 /* Main Dice Tray */
 .casino-surface {
-    background: radial-gradient(circle at center, #2d0404 0%, #050505 100%);
-    border: 6px solid #1a1a1a;
-    box-shadow: 0 0 40px rgba(0,0,0,1);
+    background: radial-gradient(circle at 30% 30%, #3d0606 0%, #1a0202 50%, #050505 100%);
+    border: 10px solid #1a1a1a;
+    box-shadow: 0 30px 60px rgba(0,0,0,1), inset 0 0 40px rgba(0,0,0,0.8), 0 0 0 2px rgba(255,255,255,0.05);
     border-radius: 50%;
-    width: 180px; height: 180px;
+    width: 200px; height: 200px;
     display: flex; align-items: center; justify-content: center;
     position: relative;
     z-index: 10;
+    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transform: perspective(1000px) rotateX(15deg);
+}
+
+.xoc-dia-plate {
+    background: radial-gradient(circle at center, #f0f0f0 0%, #d0d0d0 100%);
+    border: 4px solid #aaa;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 2px 5px rgba(255,255,255,1);
+    border-radius: 50%;
 }
 
 .plate-container {
@@ -273,11 +328,25 @@ body::before {
 
 /* Mobile Optimizations */
 @media (max-width: 640px) {
-    .casino-surface { width: 180px; height: 180px; }
-    .plate-container { width: 160px; height: 160px; }
-    --dice-size: 30px;
-    --dice-half: 15px;
-    .chip { width: 45px; height: 45px; font-size: 10px; }
+    :root {
+        --dice-size: 24px;
+        --dice-half: 12px;
+    }
+    .casino-surface { width: 140px; height: 140px; }
+    .plate-container { width: 120px; height: 120px; }
+    .chip { width: 40px; height: 40px; font-size: 9px; border-width: 2px; }
+    .info-bar { padding: 8px 12px; }
+    .game-thumb { height: 100px; }
+    .bottom-dock { bottom: 5px; left: 5px; right: 5px; padding: 4px 8px; border-radius: 20px; gap: 2px; }
+    .bottom-dock i { font-size: 14px; }
+    .bottom-dock span { font-size: 7px; }
+}
+
+@media (max-width: 380px) {
+    .casino-surface { width: 120px; height: 120px; }
+    .plate-container { width: 100px; height: 100px; }
+    .btn-hit-tai, .btn-hit-xiu { padding-top: 2rem !important; padding-bottom: 2rem !important; }
+    .btn-hit-tai span.text-3xl, .btn-hit-xiu span.text-3xl { font-size: 1.5rem; line-height: 2rem; }
 }
 
 /* Utility Animations */
@@ -299,3 +368,27 @@ body::before {
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.animate-fadeIn {
+    animation: fadeIn 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+    opacity: 0;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.stagger-1 { animation-delay: 0.1s; }
+.stagger-2 { animation-delay: 0.2s; }
+.stagger-3 { animation-delay: 0.3s; }
+.stagger-4 { animation-delay: 0.4s; }
+
+.floating {
+    animation: floating 3s ease-in-out infinite;
+}
+
+@keyframes floating {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-5px); }
+    100% { transform: translateY(0px); }
+}

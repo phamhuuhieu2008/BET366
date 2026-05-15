@@ -35,8 +35,13 @@ if (args.Contains("--migrate"))
 {
     using (var scope = app.Services.CreateScope())
     {
-        var sqlServerConn = "Server=(localdb)\\MSSQLLocalDB;Database=BET366DB;Trusted_Connection=True;TrustServerCertificate=True;";
+        var sqlServerConn = builder.Configuration.GetConnectionString("SqlServerSource") 
+                            ?? "Server=(localdb)\\MSSQLLocalDB;Database=BET366DB;Trusted_Connection=True;TrustServerCertificate=True;";
         var pgConn = builder.Configuration.GetConnectionString("DefaultConnection");
+        if (string.IsNullOrEmpty(pgConn))
+        {
+            throw new InvalidOperationException("DefaultConnection connection string is not configured in appsettings.json.");
+        }
         await BET366.Utilities.DataMigrator.MigrateData(sqlServerConn, pgConn);
     }
     return; // Exit after migration
@@ -91,9 +96,24 @@ using (var scope = app.Services.CreateScope())
         // Jackpot Config
         try {
             db.Database.ExecuteSqlRaw(@"
-                INSERT INTO ""SystemConfigs"" (""ConfigKey"", ""ConfigValue"", ""Description"", ""UpdatedAt"") 
-                SELECT 'JackpotValue', '100000000', 'Giá trị nổ hũ', CURRENT_TIMESTAMP
+                INSERT INTO ""SystemConfigs"" (""Id"", ""ConfigKey"", ""ConfigValue"", ""Description"", ""UpdatedAt"") 
+                SELECT 15, 'JackpotValue', '100000000', 'Giá trị nổ hũ', CURRENT_TIMESTAMP
                 WHERE NOT EXISTS (SELECT 1 FROM ""SystemConfigs"" WHERE ""ConfigKey"" = 'JackpotValue');");
+        } catch { }
+
+        // Xoc Dia Config
+        try {
+            db.Database.ExecuteSqlRaw(@"
+                INSERT INTO ""SystemConfigs"" (""Id"", ""ConfigKey"", ""ConfigValue"", ""Description"", ""UpdatedAt"") 
+                SELECT 16, 'XocDiaBettingDuration', '30', 'Thời gian đặt cược Xóc Đĩa (giây)', CURRENT_TIMESTAMP
+                WHERE NOT EXISTS (SELECT 1 FROM ""SystemConfigs"" WHERE ""ConfigKey"" = 'XocDiaBettingDuration');");
+        } catch { }
+        // Bau Cua Config
+        try {
+            db.Database.ExecuteSqlRaw(@"
+                INSERT INTO ""SystemConfigs"" (""Id"", ""ConfigKey"", ""ConfigValue"", ""Description"", ""UpdatedAt"") 
+                SELECT 17, 'BauCuaBettingDuration', '35', 'Thời gian đặt cược Bầu Cua (giây)', CURRENT_TIMESTAMP
+                WHERE NOT EXISTS (SELECT 1 FROM ""SystemConfigs"" WHERE ""ConfigKey"" = 'BauCuaBettingDuration');");
         } catch { }
     } catch (Exception ex) { Console.WriteLine("⚠️ DB Patch error: " + ex.Message); }
     

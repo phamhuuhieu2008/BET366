@@ -165,17 +165,8 @@ namespace BET366.Controllers
         // ─── GAME CONTROL ───────────────────────────────────────
         public IActionResult GameControl()
         {
-            var state = _engine.State;
-            var vm = new AdminGameControlViewModel
-            {
-                CurrentPhase = state.Phase,
-                TimeLeft = state.TimeLeft,
-                CurrentOverride = state.ResultOverride,
-                GameHistory = state.GameHistory,
-                TotalBetLeft = state.TotalBetLeft,
-                TotalBetRight = state.TotalBetRight
-            };
-            return View(vm);
+            // Truyền trực tiếp trạng thái GameEngine vào View để khớp với @model GameState
+            return View(_engine.State);
         }
 
         [HttpPost]

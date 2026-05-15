@@ -1,6 +1,7 @@
 using BET366.Data;
 using BET366.Models;
 using BET366.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
@@ -29,6 +30,8 @@ namespace BET366.Hubs
             // Send current state immediately
             var state = _engine.State;
             await Clients.Caller.SendAsync("TimerUpdate", new { timeLeft = state.TimeLeft, phase = state.Phase });
+            await Clients.Caller.SendAsync("XocDiaTimerUpdate", new { timeLeft = state.XocDia.TimeLeft, phase = state.XocDia.Phase });
+            await Clients.Caller.SendAsync("BauCuaTimerUpdate", new { timeLeft = state.BauCua.TimeLeft, phase = state.BauCua.Phase });
             await Clients.Caller.SendAsync("TotalBetsUpdate", new { leftTotal = state.TotalBetLeft, rightTotal = state.TotalBetRight });
             await Clients.Caller.SendAsync("GameHistoryUpdate", state.GameHistory);
         }
@@ -184,27 +187,13 @@ namespace BET366.Hubs
 
             if (user == null || user.Balance < amount) return new { success = false, message = "Số dư không đủ!" };
             if (amount < 1000) return new { success = false, message = "Cược tối thiểu 1,000đ" };
+            if (_engine.State.XocDia.Phase != "betting") return new { success = false, message = "Đã hết thời gian cược!" };
 
             user.Balance -= amount;
-
-            // Generate 4 coins (0: white, 1: red)
-            var rand = new Random();
-            int[] coins = new int[4];
-            int redCount = 0;
-            for(int i=0; i<4; i++) {
-                coins[i] = rand.Next(0, 2);
-                if (coins[i] == 1) redCount++;
-            }
-
-            string resultSide = (redCount % 2 == 0) ? "chan" : "le";
-            long winAmount = 0;
-            if (side == resultSide) {
-                winAmount = amount * 2;
-                user.Balance += winAmount;
-            }
-
+            _engine.AddXocDiaBet(side, username, amount);
             await db.SaveChangesAsync();
-            return new { success = true, balance = user.Balance, coins = coins, winAmount = winAmount };
+
+            return new { success = true, balance = user.Balance };
         }
 
         public async Task<object> PlayBauCua(string choice, long amount)
@@ -217,25 +206,24 @@ namespace BET366.Hubs
             var user = await db.Users.FirstOrDefaultAsync(u => u.Username == username);
 
             if (user == null || user.Balance < amount) return new { success = false, message = "Số dư không đủ!" };
-            
+            if (amount < 1000) return new { success = false, message = "Cược tối thiểu 1,000đ" };
+            if (_engine.State.BauCua.Phase != "betting") return new { success = false, message = "Đã hết thời gian cược!" };
+
             user.Balance -= amount;
-
-            string[] symbols = { "nai", "bau", "ga", "ca", "cua", "tom" };
-            var rand = new Random();
-            string[] result = { symbols[rand.Next(0, 6)], symbols[rand.Next(0, 6)], symbols[rand.Next(0, 6)] };
-
-            int matches = 0;
-            foreach(var r in result) if(r == choice) matches++;
-
-            long winAmount = 0;
-            if (matches > 0) {
-                winAmount = amount + (amount * matches); // Original + (win multiplier)
-                user.Balance += winAmount;
-            }
-
+            _engine.AddBauCuaBet(choice, username, amount);
             await db.SaveChangesAsync();
-            return new { success = true, balance = user.Balance, result = result, winAmount = winAmount };
+
+            return new { success = true, balance = user.Balance };
         }
+
+        [Authorize(Roles = "Admin")]
+        public void SetTaiXiuOverride(string mode) => _engine.SetResultOverride(mode);
+
+        [Authorize(Roles = "Admin")]
+        public void SetXocDiaOverride(string mode) => _engine.State.XocDiaOverride = mode;
+
+        [Authorize(Roles = "Admin")]
+        public void SetBauCuaOverride(string mode) => _engine.State.BauCuaOverride = mode;
 
         public override Task OnConnectedAsync()
         {

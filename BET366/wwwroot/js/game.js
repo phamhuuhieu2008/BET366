@@ -5,7 +5,9 @@
 let balance = 0, hasBet = false, sideBet = null, selectedSide = null;
 let currentBetId = null, isOpening = false, lastPhase = 'betting', resultFetched = false;
 let autoOpenTimeout = null, currentDisplayedXiu = 0, currentDisplayedTai = 0;
+let selectedXocDiaSide = null;
 let currentGeneratedTransferCode = "";
+window.pendingBetResult = null; // Biến lưu kết quả cược tạm thời
 
 // Drag-to-open logic
 let isDragging = false, startY = 0, currentY = 0;
@@ -13,18 +15,45 @@ const BOWL_OPEN_THRESHOLD = 80;
 
 // ─── SignalR Connection ──────────────────────
 const connection = new signalR.HubConnectionBuilder()
-    .withUrl("/gamehub")
-    .withAutomaticReconnect()
+    .withUrl("/gameHub")
+    .withAutomaticReconnect([0, 2000, 5000, 10000, 20000])
     .build();
 
-connection.start().then(() => {
-    console.log("🚀 SignalR Luxury connected");
-    connection.invoke("JoinGame", document.getElementById('profileUsername')?.textContent?.trim() || "");
-    loadInitialData();
-}).catch(err => console.error("SignalR error:", err));
+async function startConnection() {
+    try {
+        if (connection.state !== signalR.HubConnectionState.Disconnected) return;
+
+        await connection.start();
+        console.log("SignalR Connected.");
+        const username = document.getElementById('profileUsername')?.textContent?.trim() || "";
+        if (username) {
+            connection.invoke("JoinGame", username).catch(err => console.error("JoinGame error:", err));
+        }
+        loadInitialData();
+        updateBalanceDisplay();
+    } catch (err) {
+        console.error("SignalR Connection Error: ", err);
+        setTimeout(startConnection, 5000);
+    }
+}
+
+connection.onreconnecting(error => {
+    showToast("⚠️ Mất kết nối, đang thử lại...", "warning");
+});
+
+connection.onreconnected(connectionId => {
+    showToast("✅ Đã kết nối lại!", "success");
+});
+
+startConnection();
 
 // ─── SignalR Event Handlers ──────────────────
 connection.on("TimerUpdate", (data) => {
+    if (data.phase === 'betting' && lastPhase !== 'betting') {
+        resetGameUI();
+        if (document.getElementById('playBtn')) document.getElementById('playBtn').disabled = false;
+    }
+    lastPhase = data.phase;
     const el = document.getElementById('countdown');
     const phaseEl = document.getElementById('phaseText');
     if (el) {
@@ -40,20 +69,44 @@ connection.on("TimerUpdate", (data) => {
         phaseEl.textContent = data.phase === 'betting' ? "Đang đặt cược" : "Đang mở thưởng";
         phaseEl.className = data.phase === 'betting' ? "text-[9px] text-zinc-500 uppercase font-bold tracking-[0.2em] mb-0.5" : "text-[9px] text-yellow-500 uppercase font-bold tracking-[0.2em] mb-0.5";
     }
-    
-    // Auto-open logic when TimeLeft <= 5 in rolling phase
-    if (data.phase === 'rolling' && data.timeLeft <= 5) {
-        finalizeOpen();
-    }
+});
 
-    if (lastPhase === 'rolling' && data.phase === 'betting') resetGameUI();
-    if (lastPhase === 'betting' && data.phase === 'rolling') {
-        if (!isOpening) {
-            isOpening = true;
-            document.getElementById('mainPlate').classList.add('rolling-slow');
-        }
+connection.on("XocDiaTimerUpdate", (data) => {
+    const el = document.getElementById('xocDiaCountdown');
+    if (el) el.textContent = data.timeLeft;
+    const pEl = document.getElementById('xocDiaPhaseText');
+    if (pEl) pEl.textContent = data.phase === 'betting' ? 'Đang đặt cược' : 'Đang xóc đĩa...';
+});
+
+connection.on("BauCuaTimerUpdate", (data) => {
+    const el = document.getElementById('bauCuaCountdown');
+    if (el) el.textContent = data.timeLeft;
+    const pEl = document.getElementById('bauCuaPhaseText');
+    if (pEl) pEl.textContent = data.phase === 'betting' ? 'Đang đặt cược' : 'Đang lắc bầu cua...';
+});
+
+connection.on("XocDiaResult", async (data) => {
+    const coinsHtml = data.coins.map(c => `<div class="w-6 h-6 sm:w-8 sm:h-8 rounded-full ${c === 1 ? 'bg-red-500' : 'bg-white'} shadow-lg"></div>`).join('');
+    const resEl = document.getElementById('xocDiaCoins');
+    if (resEl) resEl.innerHTML = coinsHtml;
+    // TỰ ĐỘNG MỞ BÁT XÓC ĐĨA
+    setTimeout(finalizeXocDiaOpen, 1000);
+});
+
+connection.on("BauCuaResult", async (data) => {
+    const emojiMap = { nai: '🦌', bau: '🎃', ga: '🐓', ca: '🐟', cua: '🦀', tom: '🦐' };
+    const resultsHtml = data.result.map(r => `<div class="w-12 h-12 sm:w-16 sm:h-16 bg-zinc-800 rounded-2xl flex items-center justify-center text-2xl sm:text-3xl shadow-xl border border-white/5 animate-bounce">${emojiMap[r]}</div>`).join('');
+    const resEl = document.getElementById('bauCuaResults');
+    if (resEl) resEl.innerHTML = resultsHtml;
+
+    if (window.pendingBetResult) {
+        const res = window.pendingBetResult;
+        if (res.winAmount > 0) {
+            showToast(`🎉 Bầu Cua Thắng: +${res.winAmount.toLocaleString()}đ`, "success");
+            triggerWinEffect();
+        } else { showToast("Rất tiếc, Bầu Cua không trúng rồi!", "error"); }
+        window.pendingBetResult = null;
     }
-    lastPhase = data.phase;
 });
 
 connection.on("TotalBetsUpdate", (data) => { syncTotalBets(data.leftTotal, data.rightTotal); });
@@ -79,25 +132,19 @@ connection.on("GameResult", (data) => {
         resultEl.dataset.color = colorCls;
     }
 
-    // Hint to drag
-    setTimeout(() => {
-        const bowl = document.getElementById('bowl');
-        if (bowl && !bowl.classList.contains('open')) {
-            bowl.classList.add('hint-drag');
-            showToast("🎁 Kéo đĩa để xem kết quả!", "success");
-        }
-    }, 2500);
-});
-
-connection.on("BetResolved", (data) => {
-    balance = data.balance;
-    updateBalanceDisplay();
-    // Logic moved to after bowl is opened
-    window.lastBetResult = data;
+    // TỰ ĐỘNG MỞ BÁT: Sau khi xúc xắc quay xong (2.5s) + 0.5s chờ
+    setTimeout(finalizeOpen, 3000);
 });
 
 connection.on("GameHistoryUpdate", (history) => { renderHistoryChart(history); });
 connection.on("BalanceUpdate", (data) => { balance = data.balance; updateBalanceDisplay(); });
+
+connection.on("BetResolved", (data) => {
+    balance = data.balance;
+    updateBalanceDisplay();
+    window.pendingBetResult = data; // Lưu để các hàm finalize hiển thị thông báo
+});
+
 connection.on("DepositApproved", (data) => {
     balance = data.balance;
     updateBalanceDisplay();
@@ -110,52 +157,15 @@ connection.on("AccountLocked", () => {
 });
 
 // ─── Drag Logic ──────────────────────────────
-function initDrag() {
-    const bowl = document.getElementById('bowl');
-    if (!bowl) return;
-
-    const startDrag = (e) => {
-        if (bowl.classList.contains('open') || lastPhase !== 'rolling' || isOpening === false) return;
-        isDragging = true;
-        startY = e.type.includes('mouse') ? e.pageY : e.touches[0].pageY;
-        bowl.style.transition = "none";
-        bowl.classList.remove('hint-drag');
-    };
-
-    const onDrag = (e) => {
-        if (!isDragging) return;
-        currentY = e.type.includes('mouse') ? e.pageY : e.touches[0].pageY;
-        let diff = startY - currentY;
-        if (diff < 0) diff = 0; // Only pull up
-        if (diff > 150) diff = 150;
-        
-        bowl.style.transform = `translateY(-${diff}px) rotateX(${-diff/4}deg)`;
-        
-        if (diff > BOWL_OPEN_THRESHOLD) {
-            finalizeOpen();
-        }
-    };
-
-    const endDrag = () => {
-        if (!isDragging) return;
-        isDragging = false;
-        if (!bowl.classList.contains('open')) {
-            bowl.style.transition = "transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
-            bowl.style.transform = "translateY(0)";
-        }
-    };
-
-    bowl.addEventListener('mousedown', startDrag);
-    bowl.addEventListener('touchstart', startDrag);
-    window.addEventListener('mousemove', onDrag);
-    window.addEventListener('touchmove', onDrag);
-    window.addEventListener('mouseup', endDrag);
-    window.addEventListener('touchend', endDrag);
-}
+/**
+ * Gỡ bỏ logic vuốt kéo (Drag) theo yêu cầu.
+ * Game sẽ tự động mở kết quả.
+ */
+function initDrag() { /* Đã vô hiệu hóa vuốt */ }
 
 function finalizeOpen() {
     const bowl = document.getElementById('bowl');
-    if (bowl.classList.contains('open')) return;
+    if (!bowl || bowl.classList.contains('open')) return;
     isDragging = false;
     bowl.classList.add('open');
     bowl.style.transition = "all 0.8s ease-in-out";
@@ -166,16 +176,19 @@ function finalizeOpen() {
     const resultEl = document.getElementById('result');
     if (resultEl && resultEl.dataset.content) {
         resultEl.innerHTML = `<div class="${resultEl.dataset.color} font-black text-3xl drop-shadow-[0_0_15px_rgba(255,255,255,0.2)] animate-bounce">${resultEl.dataset.content}</div>`;
-        
-        if (window.lastBetResult) {
-            const data = window.lastBetResult;
+
+        if (window.pendingBetResult) {
+            const data = window.pendingBetResult;
             setTimeout(() => {
-                if (data.result === 'Thắng') {
+                if (data.winAmount > 0) {
                     resultEl.innerHTML += `<div class="text-green-400 font-bold mt-1 text-base">🎉 +${data.winAmount.toLocaleString()}đ</div>`;
                     showToast(`🎉 CHÚC MỪNG! +${data.winAmount.toLocaleString()}đ`, 'success');
                     triggerWinEffect();
-                } else { resultEl.innerHTML += `<div class="text-zinc-600 font-bold mt-1 text-sm">HẸN BẠN PHIÊN SAU</div>`; }
-                window.lastBetResult = null;
+                } else {
+                    resultEl.innerHTML += `<div class="text-zinc-600 font-bold mt-1 text-sm">HẸN BẠN PHIÊN SAU</div>`;
+                    showToast("Rất tiếc, chúc bạn may mắn lần sau!", "error");
+                }
+                window.pendingBetResult = null;
             }, 500);
         }
     }
@@ -200,7 +213,6 @@ async function loadInitialData() {
             }
         }
     } catch (e) { console.error(e); }
-    initDrag();
 }
 
 function syncTotalBets(serverLeft, serverRight) {
@@ -223,27 +235,42 @@ function renderHistoryChart(history) {
 }
 
 function toggleGame(id) {
-    const el = document.getElementById(id + 'Game');
-    if (!el) return;
-    if (el.classList.contains('hidden')) {
-        el.classList.remove('hidden');
-        el.classList.add('flex', 'animate-slideUp');
-    } else {
-        el.classList.add('hidden');
-        el.classList.remove('flex', 'animate-slideUp');
-    }
+    if (!id) return;
+    const gameIds = ['taiXiuGame', 'xocDiaGame', 'bauCuaGame', 'slotGame'];
+    // Chuẩn hóa ID để so sánh không phân biệt hoa thường
+    const normalizedTarget = id.toLowerCase().endsWith('game') ? id.toLowerCase() : id.toLowerCase() + 'game';
+
+    gameIds.forEach(gid => {
+        const el = document.getElementById(gid);
+        if (!el) return;
+
+        if (gid.toLowerCase() === normalizedTarget) {
+            const isHidden = el.classList.contains('hidden');
+            if (isHidden) {
+                el.classList.remove('hidden');
+                el.classList.add('flex', 'animate-slideUp');
+            } else {
+                el.classList.add('hidden');
+                el.classList.remove('flex');
+            }
+        } else {
+            el.classList.add('hidden');
+            el.classList.remove('flex');
+        }
+    });
 }
 
 function resetGameUI() {
     if (autoOpenTimeout) { clearTimeout(autoOpenTimeout); autoOpenTimeout = null; }
     isOpening = false; hasBet = false; sideBet = null; selectedSide = null; currentBetId = null; resultFetched = false;
+    clearBets(); // Làm mới toàn bộ tiền cược trên giao diện cho ván mới
     const bowl = document.getElementById('bowl');
-    if (bowl) { 
-        bowl.classList.remove('open', 'hint-drag'); 
+    if (bowl) {
+        bowl.classList.remove('open', 'hint-drag');
         bowl.style.transition = "transform 0.5s";
-        bowl.style.transform = ""; 
-        bowl.style.opacity = "1"; 
-        currentDisplayedXiu = 0; 
+        bowl.style.transform = "";
+        bowl.style.opacity = "1";
+        currentDisplayedXiu = 0;
         currentDisplayedTai = 0;
         document.getElementById('totalXiu').textContent = "0";
         document.getElementById('totalTai').textContent = "0";
@@ -261,7 +288,7 @@ function resetGameUI() {
         d.style.transform = `rotateX(0deg) rotateY(0deg)`;
     });
     document.getElementById('playBtn').disabled = false;
-    window.lastBetResult = null;
+    window.pendingBetResult = null;
 }
 
 function clearBets() {
@@ -276,20 +303,14 @@ function clearBets() {
     });
 }
 
-connection.on('TimerUpdate', (data) => {
-    if (data.phase === 'betting' && lastPhase !== 'betting') {
-        clearBets();
-        document.getElementById('playBtn').disabled = false;
-    }
-    lastPhase = data.phase;
-    updateTimerUI(data.timeLeft, data.phase);
-});
-
 function updateBalanceDisplay() {
     const el = document.getElementById('balance');
     if (el) animateNumber(el, parseInt(el.textContent.replace(/,/g, '')) || 0, balance, 800);
     const pb = document.getElementById('profileBalance');
-    if (pb) pb.textContent = balance.toLocaleString();
+    if (pb) pb.textContent = balance.toLocaleString() + 'đ';
+    document.querySelectorAll('.mini-balance').forEach(b => {
+        b.textContent = balance.toLocaleString() + 'đ';
+    });
 }
 
 function selectSide(side) {
@@ -312,34 +333,53 @@ async function placeBet() {
     if (!selectedSide || isNaN(amount) || amount < 1000) { showToast("Chọn cửa & tiền cược!", "error"); return; }
     if (balance < amount) { showToast("Số dư không đủ!", "error"); return; }
     const btn = document.getElementById('playBtn');
-    btn.disabled = true;
+    if (btn) btn.disabled = true;
     try {
+        if (connection.state !== "Connected") {
+            showToast("❌ Mất kết nối server!", "error");
+            if (btn) btn.disabled = false;
+            return;
+        }
         const result = await connection.invoke("PlaceBet", selectedSide, amount);
         if (result.success) {
             hasBet = true; balance = result.balance;
             updateBalanceDisplay();
             const sideEl = selectedSide === 'left' ? 'placedBetXiu' : 'placedBetTai';
             const el = document.getElementById(sideEl);
-            el.textContent = amount.toLocaleString() + 'đ';
-            el.classList.remove('hidden');
+            if (el) {
+                let current = parseInt(el.textContent.replace(/[^0-9]/g, '')) || 0;
+                el.textContent = (current + amount).toLocaleString() + 'đ';
+                el.classList.remove('hidden');
+            }
             showToast("✅ Đã đặt cược!");
-        } else { showToast(result.message || "Lỗi cược", "error"); btn.disabled = false; }
-    } catch (e) { showToast("❌ Lỗi kết nối!", "error"); btn.disabled = false; }
+        } else { showToast(result.message || "Lỗi cược", "error"); if (btn) btn.disabled = false; }
+    } catch (e) {
+        console.error("PlaceBet error:", e);
+        showToast("❌ Lỗi kết nối!", "error");
+        if (btn) btn.disabled = false;
+    }
 }
 
 // ─── Transaction Functions ───────────────────
 function openModal(id) {
-    document.getElementById(id).classList.remove('hidden');
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove('hidden');
     if (id === 'historyModal') renderHistory();
     if (id === 'chartModal') renderCharts();
     if (id === 'profileModal') loadProfileData();
     if (id === 'depositModal') {
-        document.getElementById('depositStep1').classList.remove('hidden');
-        document.getElementById('depositStep2').classList.add('hidden');
+        const s1 = document.getElementById('depositStep1');
+        const s2 = document.getElementById('depositStep2');
+        if (s1) s1.classList.remove('hidden');
+        if (s2) s2.classList.add('hidden');
     }
 }
 
-function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+function closeModal(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('hidden');
+}
 
 async function showTransferInfo() {
     const amount = document.getElementById('depositAmount').value;
@@ -367,10 +407,10 @@ async function confirmDeposit() {
     const senderName = document.getElementById('confirmSenderName').value.trim();
     if (!senderName) { showToast("Vui lòng nhập tên người chuyển!", "error"); return; }
 
-    const res = await fetch('/Transaction/Deposit', { 
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify({ amount, transferCode: currentGeneratedTransferCode, senderName }) 
+    const res = await fetch('/Transaction/Deposit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount, transferCode: currentGeneratedTransferCode, senderName })
     });
     const data = await res.json();
     if (data.success) { showToast(data.message); closeModal('depositModal'); }
@@ -496,7 +536,7 @@ async function renderCharts() {
     if (!data.success || !data.history.length) return;
 
     const history = data.history;
-    
+
     // Update summary header
     const last = history[history.length - 1];
     document.getElementById('latestCode').textContent = "#" + last.sessionCode;
@@ -551,49 +591,14 @@ connection.on('JackpotUpdate', (val) => {
     if (el) animateNumber(el, parseInt(el.textContent.replace(/,/g, '')) || 0, val, 1000);
 });
 
-async function spinSlot() {
-    if (isSpinning) return;
-    const amount = parseInt(document.getElementById('slotBetAmount').value);
-    if (balance < amount) { showToast('Số dư không đủ!', 'error'); return; }
-
-    isSpinning = true;
-    const btn = document.getElementById('spinBtn');
-    btn.disabled = true;
-    btn.textContent = 'ĐANG QUAY...';
-
-    try {
-        const result = await connection.invoke('SpinSlot', amount);
-        if (result.success) {
-            balance = result.balance;
-            updateBalanceDisplay();
-            await performSpinAnimation(result.grid);
-            
-            if (result.winAmount > 0) {
-                showToast(result.isJackpot ? '🎰 NỔ HŨ KHỔNG LỒ!' : '🎉 BẠN ĐÃ THẮNG ' + result.winAmount.toLocaleString() + 'đ', 'success');
-                if (result.isJackpot) confetti({ particleCount: 300, spread: 100, origin: { y: 0.5 } });
-                else triggerWinEffect();
-            }
-        } else {
-            showToast(result.message, 'error');
-        }
-    } catch (e) {
-        showToast('Lỗi kết nối!', 'error');
-    } finally {
-        isSpinning = false;
-        const btnReset = document.getElementById('spinBtn');
-        btnReset.disabled = false;
-        btnReset.textContent = 'QUAY NGAY';
-    }
-}
-
 async function performSpinAnimation(finalGrid) {
     const reels = [document.getElementById('reel0'), document.getElementById('reel1'), document.getElementById('reel2')];
-    
+
     const promises = reels.map((reel, i) => {
         return new Promise(resolve => {
             const strip = [];
-            for(let s=0; s<30; s++) strip.push(SLOT_SYMBOLS[Math.floor(Math.random() * SLOT_SYMBOLS.length)]);
-            
+            for (let s = 0; s < 30; s++) strip.push(SLOT_SYMBOLS[Math.floor(Math.random() * SLOT_SYMBOLS.length)]);
+
             strip[strip.length - 3] = SLOT_SYMBOLS[finalGrid[0][i]];
             strip[strip.length - 2] = SLOT_SYMBOLS[finalGrid[1][i]];
             strip[strip.length - 1] = SLOT_SYMBOLS[finalGrid[2][i]];
@@ -602,11 +607,11 @@ async function performSpinAnimation(finalGrid) {
             reel.style.transition = 'none';
             reel.style.transform = 'translateY(0)';
             reel.offsetHeight;
-            
+
             const travel = (strip.length - 3) * 48;
             reel.style.transition = `transform ${2 + i * 0.5}s cubic-bezier(0.45, 0.05, 0.55, 0.95)`;
             reel.style.transform = `translateY(-${travel}px)`;
-            
+
             setTimeout(resolve, 2000 + i * 500);
         });
     });
@@ -615,70 +620,50 @@ async function performSpinAnimation(finalGrid) {
 }
 
 // ─── Xóc Đĩa Logic ──────────────────────────
-let selectedXocDiaSide = null;
 function selectXocDiaSide(side) {
     selectedXocDiaSide = side;
-    document.getElementById('btnXocDiaChan').classList.toggle('border-yellow-500', side === 'chan');
-    document.getElementById('btnXocDiaChan').classList.toggle('bg-yellow-500/10', side === 'chan');
-    document.getElementById('btnXocDiaLe').classList.toggle('border-yellow-500', side === 'le');
-    document.getElementById('btnXocDiaLe').classList.toggle('bg-yellow-500/10', side === 'le');
+    const btnChan = document.getElementById('btnXocDiaChan');
+    const btnLe = document.getElementById('btnXocDiaLe');
+    if (btnChan) {
+        btnChan.classList.toggle('border-yellow-500', side === 'chan');
+        btnChan.classList.toggle('bg-yellow-500/10', side === 'chan');
+    }
+    if (btnLe) {
+        btnLe.classList.toggle('border-yellow-500', side === 'le');
+        btnLe.classList.toggle('bg-yellow-500/10', side === 'le');
+    }
 }
 
 async function playXocDia() {
-    if (!selectedXocDiaSide) { showToast("Vui lòng chọn Chẵn hoặc Lẻ", "error"); return; }
+    if (!selectedXocDiaSide) { showToast("Vui lòng chọn Chẵn hoặc Lẻ!", "error"); return; }
     const amount = parseInt(document.getElementById('xocDiaBetAmount').value);
     if (balance < amount) { showToast("Số dư không đủ!", "error"); return; }
 
-    const btn = document.getElementById('xocDiaSpinBtn');
-    btn.disabled = true;
-    btn.textContent = 'ĐANG XÓC...';
-
     try {
+        if (connection.state !== "Connected") {
+            showToast("❌ Lỗi kết nối server!", "error");
+            return;
+        }
         const result = await connection.invoke('PlayXocDia', selectedXocDiaSide, amount);
         if (result.success) {
-            // Update balance
             balance = result.balance;
             updateBalanceDisplay();
+            showToast("✅ Đặt cược thành công!", "success");
 
-            // Update badge
-            const badgeId = selectedXocDiaSide === 'chan' ? 'placedBetXocDiaChan' : 'placedBetXocDiaLe';
+            // Show local bet indicator
+            const badgeId = 'placedBetXocDia' + (selectedXocDiaSide === 'chan' ? 'Chan' : 'Le');
             const badge = document.getElementById(badgeId);
-            badge.textContent = amount.toLocaleString() + 'đ';
-            badge.classList.remove('hidden');
-            
-            // Shake Animation
-            const bowl = document.getElementById('xocDiaBowl');
-            const plate = document.getElementById('xocDiaPlate');
-            bowl.style.transition = 'transform 0.1s';
-            for(let i=0; i<15; i++) {
-                const x = Math.random() * 10 - 5;
-                const y = Math.random() * 10 - 5;
-                plate.style.transform = `translate(${x}px, ${y}px)`;
-                bowl.style.transform = `translate(${x}px, ${y}px)`;
-                await new Promise(r => setTimeout(r, 50));
-            }
-            plate.style.transform = '';
-            bowl.style.transform = '';
-
-            // Update Coins result before opening
-            const coinsHtml = result.coins.map(c => `<div class="w-8 h-8 rounded-full ${c === 1 ? 'bg-red-500' : 'bg-white'} shadow-lg"></div>`).join('');
-            document.getElementById('xocDiaCoins').innerHTML = coinsHtml;
-
-            showToast("Đã xóc xong! Hãy mở bát.", "success");
-            if (result.winAmount > 0) {
-                setTimeout(() => {
-                    showToast(`🎉 CHÚC MỪNG! Bạn thắng ${(result.winAmount).toLocaleString()}đ`, "success");
-                    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-                }, 1500);
+            if (badge) {
+                let current = parseInt(badge.textContent.replace(/[^0-9]/g, '')) || 0;
+                badge.textContent = (current + amount).toLocaleString() + 'đ';
+                badge.classList.remove('hidden');
             }
         } else {
             showToast(result.message, "error");
         }
     } catch (e) {
+        console.error("PlayXocDia error:", e);
         showToast("Lỗi kết nối!", "error");
-    } finally {
-        btn.disabled = false;
-        btn.textContent = 'XÓC ĐĨA & ĐẶT CƯỢC';
     }
 }
 
@@ -699,87 +684,94 @@ async function playBauCua() {
     const amount = parseInt(document.getElementById('bauCuaBetAmount').value);
     if (balance < amount) { showToast("Số dư không đủ!", "error"); return; }
 
-    const btn = document.getElementById('bauCuaSpinBtn');
-    btn.disabled = true;
-    btn.textContent = 'ĐANG LẮC...';
-
+    const btn = document.getElementById('playBauCuaBtn'); // Thêm ID này vào button HTML của bạn
     try {
+        if (connection.state !== "Connected") {
+            showToast("❌ Lỗi kết nối server!", "error");
+            return;
+        }
+        if (btn) btn.disabled = true;
+
         const result = await connection.invoke('PlayBauCua', selectedBauCuaChoice, amount);
         if (result.success) {
             balance = result.balance;
             updateBalanceDisplay();
+            showToast("✅ Đặt cược Bầu Cua thành công!");
 
-            // Update badge
+            // Hiển thị số tiền vừa cược lên linh vật đã chọn
             const badge = document.getElementById('placedBetBC-' + selectedBauCuaChoice);
-            badge.textContent = amount.toLocaleString() + 'đ';
-            badge.classList.remove('hidden');
-
-            showToast("🎲 Đang lắc Bầu Cua...", "success");
-            await new Promise(r => setTimeout(r, 1500));
-
-            // Update Results
-            const emojiMap = { nai: '🦌', bau: '🎃', ga: '🐓', ca: '🐟', cua: '🦀', tom: '🦐' };
-            const resultsHtml = result.result.map(r => `<div class="w-16 h-16 bg-zinc-800 rounded-2xl flex items-center justify-center text-3xl shadow-xl border border-white/5 animate-bounce">${emojiMap[r]}</div>`).join('');
-            document.getElementById('bauCuaResults').innerHTML = resultsHtml;
-
-            if (result.winAmount > 0) {
-                showToast(`🎉 THẮNG LỚN! +${(result.winAmount).toLocaleString()}đ`, "success");
-                confetti({ particleCount: 150, spread: 100, origin: { y: 0.5 } });
-            } else {
-                showToast("Rất tiếc, chúc bạn may mắn lần sau!", "error");
+            if (badge) {
+                let current = parseInt(badge.textContent.replace(/[^0-9]/g, '')) || 0;
+                badge.textContent = (current + amount).toLocaleString() + 'đ';
+                badge.classList.remove('hidden');
             }
         } else {
-            showToast(result.message, "error");
+            showToast(result.message || "Lỗi đặt cược", "error");
         }
     } catch (e) {
-        showToast("Lỗi kết nối!", "error");
+        console.error("PlayBauCua error:", e);
+        showToast("Lỗi kết nối server!", "error");
     } finally {
-        btn.disabled = false;
-        btn.textContent = 'LẮC & ĐẶT CƯỢC';
+        if (btn) btn.disabled = false;
     }
 }
 
 // Update initDrag for multiple bowls
-function initAllDrags() {
-    ['bowl', 'xocDiaBowl'].forEach(id => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        
-        let startX, startY;
-        
-        const start = (e) => {
-            startX = e.type === 'mousedown' ? e.clientX : e.touches[0].clientX;
-            startY = e.type === 'mousedown' ? e.clientY : e.touches[0].clientY;
-            el.style.transition = 'none';
-        };
-        
-        const move = (e) => {
-            if (!startX) return;
-            const x = (e.type === 'mousemove' ? e.clientX : e.touches[0].clientX) - startX;
-            const y = (e.type === 'mousemove' ? e.clientY : e.touches[0].clientY) - startY;
-            el.style.transform = `translate(${x}px, ${y}px)`;
-            if (y < -100 || Math.abs(x) > 100) el.style.opacity = "0.3";
-        };
-        
-        const end = () => {
-            if (startX) {
-                el.style.transition = 'transform 0.5s';
-                el.style.transform = '';
-                el.style.opacity = '1';
-                startX = null;
-            }
-        };
-        
-        el.addEventListener('mousedown', start);
-        el.addEventListener('touchstart', start);
-        window.addEventListener('mousemove', move);
-        window.addEventListener('touchmove', move);
-        window.addEventListener('mouseup', end);
-        window.addEventListener('touchend', end);
-    });
+function initAllDrags() { /* Đã vô hiệu hóa vuốt theo yêu cầu */ }
+
+function finalizeXocDiaOpen() {
+    const bowl = document.getElementById('xocDiaBowl');
+    if (!bowl || bowl.style.display === 'none') return;
+
+    bowl.style.transition = "all 0.8s ease-in-out";
+    bowl.style.transform = "translate(100px, -150px) rotate(30deg)";
+    bowl.style.opacity = "0";
+
+    if (window.pendingBetResult) {
+        const res = window.pendingBetResult;
+        if (res.winAmount > 0) {
+            showToast(`🎉 XÓC ĐĨA THẮNG: +${res.winAmount.toLocaleString()}đ`, "success");
+            triggerWinEffect();
+        } else { showToast("Xóc Đĩa không trúng, chúc bạn may mắn lần sau!", "error"); }
+        window.pendingBetResult = null;
+    }
+
+    setTimeout(() => {
+        bowl.style.transition = "all 0.3s";
+        bowl.style.display = 'block';
+        bowl.style.transform = '';
+        bowl.style.opacity = '1';
+    }, 5000);
 }
 
-// Call initAllDrags on load
-setTimeout(initAllDrags, 1000);
+async function spinSlot() {
+    if (isSpinning) return;
+    const amount = parseInt(document.getElementById('slotBetAmount').value);
+    if (balance < amount) { showToast('Số dư không đủ!', 'error'); return; }
 
+    isSpinning = true;
+    const btn = document.getElementById('spinBtn');
+    btn.disabled = true;
+    btn.textContent = 'ĐANG QUAY...';
 
+    try {
+        const result = await connection.invoke('SpinSlot', amount);
+        if (result.success) {
+            balance = result.balance;
+            updateBalanceDisplay();
+            await performSpinAnimation(result.grid);
+
+            if (result.winAmount > 0) {
+                showToast(result.isJackpot ? '🎰 NỔ HŨ KHỔNG LỒ!' : '🎉 BẠN ĐÃ THẮNG ' + result.winAmount.toLocaleString() + 'đ', 'success');
+                if (result.isJackpot) confetti({ particleCount: 300, spread: 100, origin: { y: 0.5 } });
+                else triggerWinEffect();
+            } else {
+                showToast("Không trúng, chúc bạn may mắn ván sau!", "error");
+            }
+        } else { showToast(result.message, 'error'); }
+    } catch (e) { showToast('Lỗi kết nối!', 'error'); } finally {
+        isSpinning = false;
+        const btnReset = document.getElementById('spinBtn');
+        if (btnReset) { btnReset.disabled = false; btnReset.textContent = 'QUAY NGAY'; }
+    }
+}

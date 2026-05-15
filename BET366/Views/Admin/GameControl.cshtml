@@ -1,95 +1,220 @@
-@model BET366.Models.ViewModels.AdminGameControlViewModel
-@{ Layout = "_AdminLayout"; ViewData["Title"] = "Điều khiển Game"; }
-<h1 class="text-2xl font-black mb-8">🎲 Điều khiển Game</h1>
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-    <div class="admin-card p-6 text-center">
-        <p class="text-gray-500 text-xs uppercase mb-1">Phase</p>
-        <p class="text-2xl font-black @(Model.CurrentPhase == "betting" ? "text-green-400" : "text-red-400")" id="adminPhase">@Model.CurrentPhase.ToUpper()</p>
-    </div>
-    <div class="admin-card p-6 text-center">
-        <p class="text-gray-500 text-xs uppercase mb-1">Thời gian còn lại</p>
-        <p class="text-2xl font-black text-yellow-400" id="adminTimer">@Model.TimeLeft</p>
-    </div>
-    <div class="admin-card p-6 text-center">
-        <p class="text-gray-500 text-xs uppercase mb-1">Override hiện tại</p>
-        <p class="text-2xl font-black text-white">@Model.CurrentOverride.ToUpper()</p>
-    </div>
-</div>
-<div class="admin-card p-6 mb-8">
-    <h3 class="text-sm font-black text-white uppercase mb-4 text-center">Chỉnh kết quả phiên tới</h3>
-    <div class="grid grid-cols-3 gap-4 max-w-md mx-auto">
-        <button onclick="setResult('left')" id="ctrlLeft" class="bg-zinc-800 py-4 rounded-2xl text-sm font-black border border-white/5 hover:bg-red-600 transition">XỈU THẮNG</button>
-        <button onclick="setResult('random')" id="ctrlRandom" class="bg-red-600 py-4 rounded-2xl text-sm font-black border border-red-400 shadow-[0_0_15px_rgba(239,68,68,0.3)]">RANDOM</button>
-        <button onclick="setResult('right')" id="ctrlRight" class="bg-zinc-800 py-4 rounded-2xl text-sm font-black border border-white/5 hover:bg-red-600 transition">TÀI THẮNG</button>
-    </div>
-    <div class="bg-black/50 p-4 rounded-2xl border border-white/5 text-xs text-gray-400 italic mt-4 text-center">
-        <i class="fa-solid fa-circle-info mr-1 text-red-500"></i> Khi chọn "Xỉu" hoặc "Tài", hệ thống sẽ can thiệp kết quả phiên tiếp theo. Chỉ có tác dụng khi phiên đang ở phase "betting".
-    </div>
-</div>
-<div class="grid grid-cols-2 gap-6 mb-8">
-    <div class="admin-card p-6 text-center">
-        <p class="text-gray-500 text-xs uppercase mb-1">Tổng cược XỈU</p>
-        <p class="text-xl font-black text-yellow-400" id="adminTotalLeft">@Model.TotalBetLeft.ToString("N0")đ</p>
-    </div>
-    <div class="admin-card p-6 text-center">
-        <p class="text-gray-500 text-xs uppercase mb-1">Tổng cược TÀI</p>
-        <p class="text-xl font-black text-yellow-400" id="adminTotalRight">@Model.TotalBetRight.ToString("N0")đ</p>
-    </div>
-</div>
-<div class="admin-card p-6">
-    <h3 class="text-sm font-black text-gray-400 uppercase mb-4">Lịch sử 24 phiên</h3>
-    <div class="flex flex-wrap gap-2">
-        @foreach (var r in Model.GameHistory)
-        {
-            var isTai = r == "tai";
-            <div class="w-8 h-8 rounded-full @(isTai ? "bg-red-500 text-white" : "bg-white text-black") flex items-center justify-center text-xs font-bold">@(isTai ? "T" : "X")</div>
-        }
-    </div>
-</div>
-@section Scripts {
-<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
-<script>
-async function setResult(mode) {
-    await fetch('/Admin/SetResult?mode=' + mode, { method: 'POST' });
-    const active = "bg-red-600 py-4 rounded-2xl text-sm font-black border border-red-400 shadow-[0_0_15px_rgba(239,68,68,0.3)]";
-    const inactive = "bg-zinc-800 py-4 rounded-2xl text-sm font-black border border-white/5 hover:bg-red-600 transition";
-    document.getElementById('ctrlLeft').className = mode === 'left' ? active : inactive;
-    document.getElementById('ctrlRandom').className = mode === 'random' ? active : inactive;
-    document.getElementById('ctrlRight').className = mode === 'right' ? active : inactive;
+@model BET366.Services.GameState
+@{ 
+    Layout = "_AdminLayout"; 
+    ViewData["Title"] = "Điều khiển kết quả Game"; 
 }
 
-// SignalR Real-time Updates
-const connection = new signalR.HubConnectionBuilder()
-    .withUrl("/gamehub")
-    .withAutomaticReconnect()
-    .build();
+<h1 class="text-2xl font-black mb-8">🎯 Điều khiển kết quả Game (Trực tiếp)</h1>
 
-connection.on("TimerUpdate", (data) => {
-    const timerEl = document.getElementById('adminTimer');
-    if (timerEl) {
-        timerEl.textContent = data.timeLeft;
-        timerEl.className = data.timeLeft <= 5 
-            ? "text-2xl font-black text-red-500 animate-pulse" 
-            : "text-2xl font-black text-yellow-400";
-    }
-    const phaseEl = document.getElementById('adminPhase');
-    if (phaseEl) {
-        phaseEl.textContent = data.phase.toUpperCase();
-        phaseEl.className = data.phase === 'betting' 
-            ? "text-2xl font-black text-green-400" 
-            : "text-2xl font-black text-red-400";
-    }
-});
+<!-- Thanh điều hướng Tab -->
+<div class="flex gap-2 mb-6 p-1 bg-zinc-900 rounded-2xl w-fit border border-white/5">
+    <button onclick="showTab('taixiu')" id="nav-taixiu" class="admin-tab-btn active">🎲 Tài Xỉu</button>
+    <button onclick="showTab('xocdia')" id="nav-xocdia" class="admin-tab-btn">🪙 Xóc Đĩa</button>
+    <button onclick="showTab('baucua')" id="nav-baucua" class="admin-tab-btn">🦀 Bầu Cua</button>
+</div>
 
-connection.on("TotalBetsUpdate", (data) => {
-    const leftEl = document.getElementById('adminTotalLeft');
-    const rightEl = document.getElementById('adminTotalRight');
-    if (leftEl) leftEl.textContent = data.leftTotal.toLocaleString() + "đ";
-    if (rightEl) rightEl.textContent = data.rightTotal.toLocaleString() + "đ";
-});
+<div class="max-w-4xl">
+    <!-- Tài Xỉu Control -->
+    <div id="tab-taixiu" class="game-tab-content">
+        <div class="admin-card p-10 text-center">
+            <h3 class="text-xl font-black text-yellow-500 mb-8 italic uppercase tracking-widest">ĐIỀU KHIỂN TÀI XỈU</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6" id="taixiu-controls">
+                <button id="btn-taixiu-xiu" onclick="setOverride('taixiu', 'xiu')" class="group relative overflow-hidden py-12 bg-blue-600 hover:bg-blue-700 rounded-3xl font-black text-5xl shadow-2xl transition-all">
+                    <span class="relative z-10">XỈU</span>
+                    <div class="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                </button>
+                <button id="btn-taixiu-tai" onclick="setOverride('taixiu', 'tai')" class="group relative overflow-hidden py-12 bg-red-600 hover:bg-red-700 rounded-3xl font-black text-5xl shadow-2xl transition-all">
+                    <span class="relative z-10">TÀI</span>
+                    <div class="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                </button>
+                <button id="btn-taixiu-random" onclick="setOverride('taixiu', 'random')" class="py-12 bg-zinc-800 hover:bg-zinc-700 rounded-3xl font-bold text-xl transition-all uppercase">Ngẫu nhiên</button>
+            </div>
+        </div>
+    </div>
 
-connection.start()
-    .then(() => connection.invoke("JoinAdmin"))
-    .catch(err => console.error(err));
-</script>
+    <!-- Xóc Đĩa Control -->
+    <div id="tab-xocdia" class="game-tab-content hidden">
+        <div class="admin-card p-10 text-center">
+            <h3 class="text-xl font-black text-white mb-8 italic uppercase tracking-widest">ĐIỀU KHIỂN XÓC ĐĨA</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6" id="xocdia-controls">
+                <button id="btn-xocdia-chan" onclick="setOverride('xocdia', 'chan')" class="group relative overflow-hidden py-12 bg-white text-black hover:bg-zinc-200 rounded-3xl font-black text-5xl shadow-2xl transition-all">
+                    <span class="relative z-10">CHẴN</span>
+                </button>
+                <button id="btn-xocdia-le" onclick="setOverride('xocdia', 'le')" class="group relative overflow-hidden py-12 bg-red-600 hover:bg-red-700 rounded-3xl font-black text-5xl shadow-2xl transition-all">
+                    <span class="relative z-10">LẺ</span>
+                </button>
+                <button id="btn-xocdia-random" onclick="setOverride('xocdia', 'random')" class="py-12 bg-zinc-800 hover:bg-zinc-700 rounded-3xl font-bold text-xl transition-all uppercase">Ngẫu nhiên</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bầu Cua Control -->
+    <div id="tab-baucua" class="game-tab-content hidden">
+        <div class="admin-card p-10">
+            <h3 class="text-xl font-black text-emerald-500 mb-8 italic uppercase tracking-widest text-center">ĐIỀU KHIỂN BẦU CUA</h3>
+            <div class="grid grid-cols-3 sm:grid-cols-6 gap-4 mb-10" id="bauCuaSelectControls">
+                <button onclick="toggleBauCua('nai')" id="bc-nai" class="p-8 bg-zinc-800 rounded-[2rem] text-5xl hover:bg-zinc-700 transition-all shadow-xl">🦌</button>
+                <button onclick="toggleBauCua('bau')" id="bc-bau" class="p-8 bg-zinc-800 rounded-[2rem] text-5xl hover:bg-zinc-700 transition-all shadow-xl">🎃</button>
+                <button onclick="toggleBauCua('ga')" id="bc-ga" class="p-8 bg-zinc-800 rounded-[2rem] text-5xl hover:bg-zinc-700 transition-all shadow-xl">🐓</button>
+                <button onclick="toggleBauCua('ca')" id="bc-ca" class="p-8 bg-zinc-800 rounded-[2rem] text-5xl hover:bg-zinc-700 transition-all shadow-xl">🐟</button>
+                <button onclick="toggleBauCua('cua')" id="bc-cua" class="p-8 bg-zinc-800 rounded-[2rem] text-5xl hover:bg-zinc-700 transition-all shadow-xl">🦀</button>
+                <button onclick="toggleBauCua('tom')" id="bc-tom" class="p-8 bg-zinc-800 rounded-[2rem] text-5xl hover:bg-zinc-700 transition-all shadow-xl">🦐</button>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-4">
+                <button id="btn-baucua-submit" onclick="submitBauCua()" class="flex-1 py-6 bg-emerald-600 hover:bg-emerald-700 rounded-2xl font-black text-xl shadow-xl transition-all uppercase tracking-widest">Xác nhận ép bầu cua</button>
+                <button id="btn-baucua-random" onclick="setOverride('baucua', 'random')" class="px-10 py-6 bg-zinc-800 hover:bg-zinc-700 rounded-2xl font-bold transition-all uppercase">Hủy ép</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <style>
+        .admin-tab-btn {
+            padding: 1rem 2.5rem;
+            font-weight: 900;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            border-radius: 1.25rem;
+            color: #71717a; /* zinc-500 */
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .admin-tab-btn.active {
+            background-color: #facc15; /* yellow-400 */
+            color: #000;
+            box-shadow: 0 10px 20px rgba(250, 204, 21, 0.2);
+        }
+        .game-tab-content.hidden { display: none; }
+        .override-active {
+            border: 3px solid #facc15; /* yellow-400 */
+            box-shadow: 0 0 15px rgba(250, 204, 21, 0.5);
+            transform: scale(1.02);
+        }
+    </style>
+
+    <script>
+        const adminConn = new signalR.HubConnectionBuilder().withUrl("/gameHub").build();
+        adminConn.start().then(() => adminConn.invoke("JoinAdmin"));
+
+        const modelState = @Html.Raw(Json.Serialize(Model)); // Lấy trạng thái từ Model
+
+        function clearAllOverrides() {
+            document.querySelectorAll('.game-tab-content button').forEach(btn => {
+                btn.classList.remove('override-active');
+                // Reset Bầu Cua specific classes
+                if (btn.id.startsWith('bc-')) {
+                    btn.classList.remove('bg-emerald-500', 'ring-4', 'ring-emerald-500/20');
+                    btn.classList.add('bg-zinc-800');
+                }
+            });
+            selectedBC = []; // Clear Bầu Cua selection
+        }
+
+        function showTab(tab) {
+            // Ẩn tất cả tab
+            document.querySelectorAll('.game-tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.admin-tab-btn').forEach(el => el.classList.remove('active'));
+            
+            // Hiện tab được chọn
+            document.getElementById('tab-' + tab).classList.remove('hidden');
+            document.getElementById('nav-' + tab).classList.add('active');
+
+            // Xóa highlight của các tab khác và thiết lập lại cho tab hiện tại
+            clearAllOverrides();
+            initializeOverrides();
+        }
+
+        function initializeOverrides() {
+            // Tài Xỉu
+            if (modelState.resultOverride === 'left') {
+                document.getElementById('btn-taixiu-xiu')?.classList.add('override-active');
+            } else if (modelState.resultOverride === 'right') {
+                document.getElementById('btn-taixiu-tai')?.classList.add('override-active');
+            } else {
+                document.getElementById('btn-taixiu-random')?.classList.add('override-active');
+            }
+
+            // Xóc Đĩa
+            if (modelState.xocDiaOverride === 'chan') {
+                document.getElementById('btn-xocdia-chan')?.classList.add('override-active');
+            } else if (modelState.xocDiaOverride === 'le') {
+                document.getElementById('btn-xocdia-le')?.classList.add('override-active');
+            } else {
+                document.getElementById('btn-xocdia-random')?.classList.add('override-active');
+            }
+
+            // Bầu Cua
+            if (modelState.bauCuaOverride !== 'random' && modelState.bauCuaOverride !== null) {
+                selectedBC = modelState.bauCuaOverride.split(',');
+                selectedBC.forEach(choice => {
+                    const btn = document.getElementById('bc-' + choice);
+                    if (btn) {
+                        btn.classList.remove('bg-zinc-800');
+                        btn.classList.add('bg-emerald-500', 'ring-4', 'ring-emerald-500/20');
+                    }
+                });
+            } else {
+                document.getElementById('btn-baucua-random')?.classList.add('override-active');
+            }
+        }
+
+        function setOverride(game, mode) {
+            clearAllOverrides(); // Xóa tất cả highlight trước khi đặt cái mới
+
+            if (game === 'taixiu') {
+                adminConn.invoke("SetTaiXiuOverride", mode === 'xiu' ? 'left' : (mode === 'tai' ? 'right' : 'random'));
+                document.getElementById(`btn-taixiu-${mode}`)?.classList.add('override-active');
+            } else if (game === 'xocdia') {
+                adminConn.invoke("SetXocDiaOverride", mode);
+                document.getElementById(`btn-xocdia-${mode}`)?.classList.add('override-active');
+            } else if (game === 'baucua') {
+                adminConn.invoke("SetBauCuaOverride", mode);
+                if (mode === 'random') {
+                    document.getElementById('btn-baucua-random')?.classList.add('override-active');
+                    selectedBC = []; // Clear Bầu Cua selection
+                    document.querySelectorAll('#bauCuaSelectControls button').forEach(b => {
+                        b.classList.remove('bg-emerald-500', 'ring-4', 'ring-emerald-500/20');
+                        b.classList.add('bg-zinc-800');
+                    });
+                }
+            }
+            alert("Đã thiết lập ép kết quả " + mode.toUpperCase());
+        }
+
+        let selectedBC = [];
+        function toggleBauCua(id) {
+            const btn = document.getElementById('bc-' + id);
+            clearAllOverrides(); // Xóa tất cả highlight trước khi chọn Bầu Cua
+            if (selectedBC.includes(id)) {
+                selectedBC = selectedBC.filter(x => x !== id);
+                btn.classList.remove('bg-emerald-500', 'ring-4', 'ring-emerald-500/20');
+                btn.classList.add('bg-zinc-800');
+            } else if (selectedBC.length < 3) {
+                selectedBC.push(id);
+                btn.classList.remove('bg-zinc-800');
+                btn.classList.add('bg-emerald-500', 'ring-4', 'ring-emerald-500/20');
+            }
+            // Nếu đã chọn đủ 3 con, highlight nút xác nhận
+            if (selectedBC.length === 3) {
+                document.getElementById('btn-baucua-submit')?.classList.add('override-active');
+            } else {
+                document.getElementById('btn-baucua-submit')?.classList.remove('override-active');
+            }
+        }
+
+        function submitBauCua() {
+            if (selectedBC.length !== 3) { alert("Phải chọn đủ 3 linh vật!"); return; }
+            setOverride('baucua', selectedBC.join(','));
+            selectedBC = [];
+            document.querySelectorAll('#bauCuaSelectControls button').forEach(b => {
+                b.classList.remove('bg-emerald-500', 'ring-4', 'ring-emerald-500/20');
+                b.classList.add('bg-zinc-800');
+            });
+        }
+
+        // Khởi tạo trạng thái khi tải trang
+        document.addEventListener('DOMContentLoaded', () => {
+            showTab('taixiu'); // Mở tab Tài Xỉu mặc định
+        });
+    </script>
 }

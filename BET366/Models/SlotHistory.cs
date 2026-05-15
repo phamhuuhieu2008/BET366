@@ -14,6 +14,6 @@ namespace BET366.Models
         public long WinAmount { get; set; }
         public bool IsJackpot { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }
