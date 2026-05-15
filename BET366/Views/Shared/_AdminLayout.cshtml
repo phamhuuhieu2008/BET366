@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BET366 Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" />
+    <style>
+        body { background: #0a0a0a; font-family: 'Segoe UI', sans-serif; }
+        .admin-card { background: rgba(24,24,27,0.9); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; }
+        .sidebar-link { transition: all 0.2s; border-radius: 12px; }
+        .sidebar-link:hover, .sidebar-link.active { background: rgba(239,68,68,0.15); color: #ef4444; }
+    </style>
+</head>
+<body class="text-white min-h-screen">
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-zinc-950 border-r border-white/5 p-6 flex flex-col gap-2 fixed h-full">
+            <a href="/" class="text-3xl font-black text-red-500 mb-8 tracking-tighter">BET366<span class="text-xs text-gray-500 block font-normal">Admin Panel</span></a>
+            <a href="/Admin" class="sidebar-link px-4 py-3 flex items-center gap-3 text-sm font-bold @(ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "text-gray-400")">
+                <i class="fa-solid fa-chart-pie w-5"></i> Dashboard
+            </a>
+            <a href="/Admin/Users" class="sidebar-link px-4 py-3 flex items-center gap-3 text-sm font-bold @(ViewContext.RouteData.Values["action"]?.ToString() == "Users" ? "active" : "text-gray-400")">
+                <i class="fa-solid fa-users w-5"></i> Thành viên
+            </a>
+            <a href="/Admin/Deposits" class="sidebar-link px-4 py-3 flex items-center gap-3 text-sm font-bold @(ViewContext.RouteData.Values["action"]?.ToString() == "Deposits" ? "active" : "text-gray-400")">
+                <i class="fa-solid fa-arrow-down w-5"></i> Nạp tiền
+            </a>
+            <a href="/Admin/Withdraws" class="sidebar-link px-4 py-3 flex items-center gap-3 text-sm font-bold @(ViewContext.RouteData.Values["action"]?.ToString() == "Withdraws" ? "active" : "text-gray-400")">
+                <i class="fa-solid fa-arrow-up w-5"></i> Rút tiền
+            </a>
+            <a href="/Admin/GameControl" class="sidebar-link px-4 py-3 flex items-center gap-3 text-sm font-bold @(ViewContext.RouteData.Values["action"]?.ToString() == "GameControl" ? "active" : "text-gray-400")">
+                <i class="fa-solid fa-dice w-5"></i> Điều khiển Game
+            </a>
+            <a href="/Admin/Config" class="sidebar-link px-4 py-3 flex items-center gap-3 text-sm font-bold @(ViewContext.RouteData.Values["action"]?.ToString() == "Config" ? "active" : "text-gray-400")">
+                <i class="fa-solid fa-gear w-5"></i> Cấu hình
+            </a>
+            <div class="mt-auto">
+                <a href="/" class="sidebar-link px-4 py-3 flex items-center gap-3 text-sm font-bold text-gray-600">
+                    <i class="fa-solid fa-arrow-left w-5"></i> Về trang game
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="ml-64 flex-1 p-8">
+            @RenderBody()
+        </main>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

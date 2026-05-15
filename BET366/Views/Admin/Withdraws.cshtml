@@ -1,0 +1,37 @@
+@model List<BET366.Models.Withdraw>
+@{ Layout = "_AdminLayout"; ViewData["Title"] = "Rút tiền"; }
+<h1 class="text-2xl font-black mb-8">🏦 Quản lý rút tiền</h1>
+<div class="admin-card p-6 mb-6">
+    <h3 class="text-sm font-black text-blue-400 uppercase mb-4">Đang xử lý</h3>
+    @{ var pending = Model.Where(w => w.Status != "Hoàn thành" && w.Status != "Bị từ chối").ToList(); }
+    @if (!pending.Any()) { <p class="text-gray-500 text-xs">Không có yêu cầu</p> }
+    @foreach (var w in pending)
+    {
+        <div class="flex justify-between items-center bg-black/40 px-4 py-3 rounded-xl border border-white/5 mb-2" id="wit-@w.Id">
+            <div>
+                <div class="font-bold text-blue-400">@w.User?.Username <span class="text-white ml-2">-@w.Amount.ToString("N0")đ</span></div>
+                <div class="text-[10px] text-gray-500">@w.BankName | @w.AccountNumber | @w.AccountHolder | @w.Status</div>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="approveWit(@w.Id)" class="bg-blue-500/20 text-blue-400 px-3 py-1 rounded-lg text-xs font-black hover:bg-blue-500 transition">@(w.Status == "Đang xử lý" ? "XÁC NHẬN" : "HOÀN THÀNH")</button>
+                <button onclick="rejectWit(@w.Id)" class="text-gray-500 text-xs hover:text-red-400">HỦY</button>
+            </div>
+        </div>
+    }
+</div>
+<div class="admin-card p-6">
+    <h3 class="text-sm font-black text-gray-400 uppercase mb-4">Lịch sử</h3>
+    @foreach (var w in Model.Where(w => w.Status == "Hoàn thành" || w.Status == "Bị từ chối"))
+    {
+        var cls = w.Status == "Hoàn thành" ? "text-green-400" : "text-red-400";
+        <div class="flex justify-between bg-black/20 px-4 py-2 rounded-xl text-xs border border-white/5 opacity-70 mb-1">
+            <span>@w.User?.Username - @w.Amount.ToString("N0")đ</span><span class="@cls font-bold">@w.Status</span>
+        </div>
+    }
+</div>
+@section Scripts {
+<script>
+async function approveWit(id){if(!confirm("Xác nhận?"))return;await fetch(`/Admin/ApproveWithdraw/${id}`,{method:'POST'});location.reload();}
+async function rejectWit(id){if(!confirm("Hủy và hoàn tiền?"))return;await fetch(`/Admin/RejectWithdraw/${id}`,{method:'POST'});location.reload();}
+</script>
+}

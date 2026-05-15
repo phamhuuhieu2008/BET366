@@ -1,0 +1,61 @@
+@model BET366.Models.ViewModels.AdminDashboardViewModel
+@{ Layout = "_AdminLayout"; ViewData["Title"] = "Admin Dashboard"; }
+
+<h1 class="text-2xl font-black mb-8">📊 Dashboard</h1>
+
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+    <div class="admin-card p-6">
+        <p class="text-gray-500 text-xs uppercase font-bold mb-1">Tổng thành viên</p>
+        <p class="text-3xl font-black text-white">@Model.TotalUsers</p>
+    </div>
+    <div class="admin-card p-6">
+        <p class="text-gray-500 text-xs uppercase font-bold mb-1">Đang online</p>
+        <p class="text-3xl font-black text-green-400">@Model.OnlineUsers</p>
+    </div>
+    <div class="admin-card p-6">
+        <p class="text-gray-500 text-xs uppercase font-bold mb-1">Nạp hôm nay</p>
+        <p class="text-3xl font-black text-emerald-400">+@Model.TotalDepositToday.ToString("N0")đ</p>
+    </div>
+    <div class="admin-card p-6">
+        <p class="text-gray-500 text-xs uppercase font-bold mb-1">Rút hôm nay</p>
+        <p class="text-3xl font-black text-red-400">-@Model.TotalWithdrawToday.ToString("N0")đ</p>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Recent Deposits -->
+    <div class="admin-card p-6">
+        <h3 class="text-sm font-black text-emerald-400 uppercase mb-4"><i class="fa-solid fa-arrow-down mr-2"></i>Nạp tiền gần đây</h3>
+        <div class="space-y-2 max-h-80 overflow-y-auto">
+            @foreach (var d in Model.RecentDeposits)
+            {
+                var cls = d.Status == "Success" ? "text-green-400" : d.Status == "Pending" ? "text-yellow-400 animate-pulse" : "text-red-400";
+                <div class="flex justify-between items-center bg-black/40 px-4 py-3 rounded-xl text-xs border border-white/5">
+                    <div>
+                        <span class="font-bold text-white">@d.User?.Username</span>
+                        <span class="text-emerald-400 ml-2">+@d.Amount.ToString("N0")đ</span>
+                    </div>
+                    <span class="@cls font-bold">@d.Status</span>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Recent Withdraws -->
+    <div class="admin-card p-6">
+        <h3 class="text-sm font-black text-blue-400 uppercase mb-4"><i class="fa-solid fa-arrow-up mr-2"></i>Rút tiền gần đây</h3>
+        <div class="space-y-2 max-h-80 overflow-y-auto">
+            @foreach (var w in Model.RecentWithdraws)
+            {
+                var cls = w.Status == "Hoàn thành" ? "text-green-400" : w.Status == "Bị từ chối" ? "text-red-400" : "text-blue-400 animate-pulse";
+                <div class="flex justify-between items-center bg-black/40 px-4 py-3 rounded-xl text-xs border border-white/5">
+                    <div>
+                        <span class="font-bold text-white">@w.User?.Username</span>
+                        <span class="text-red-400 ml-2">-@w.Amount.ToString("N0")đ</span>
+                    </div>
+                    <span class="@cls font-bold">@w.Status</span>
+                </div>
+            }
+        </div>
+    </div>
+</div>

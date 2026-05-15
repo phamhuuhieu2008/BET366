@@ -1,0 +1,95 @@
+@model BET366.Models.ViewModels.AdminGameControlViewModel
+@{ Layout = "_AdminLayout"; ViewData["Title"] = "Điều khiển Game"; }
+<h1 class="text-2xl font-black mb-8">🎲 Điều khiển Game</h1>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="admin-card p-6 text-center">
+        <p class="text-gray-500 text-xs uppercase mb-1">Phase</p>
+        <p class="text-2xl font-black @(Model.CurrentPhase == "betting" ? "text-green-400" : "text-red-400")" id="adminPhase">@Model.CurrentPhase.ToUpper()</p>
+    </div>
+    <div class="admin-card p-6 text-center">
+        <p class="text-gray-500 text-xs uppercase mb-1">Thời gian còn lại</p>
+        <p class="text-2xl font-black text-yellow-400" id="adminTimer">@Model.TimeLeft</p>
+    </div>
+    <div class="admin-card p-6 text-center">
+        <p class="text-gray-500 text-xs uppercase mb-1">Override hiện tại</p>
+        <p class="text-2xl font-black text-white">@Model.CurrentOverride.ToUpper()</p>
+    </div>
+</div>
+<div class="admin-card p-6 mb-8">
+    <h3 class="text-sm font-black text-white uppercase mb-4 text-center">Chỉnh kết quả phiên tới</h3>
+    <div class="grid grid-cols-3 gap-4 max-w-md mx-auto">
+        <button onclick="setResult('left')" id="ctrlLeft" class="bg-zinc-800 py-4 rounded-2xl text-sm font-black border border-white/5 hover:bg-red-600 transition">XỈU THẮNG</button>
+        <button onclick="setResult('random')" id="ctrlRandom" class="bg-red-600 py-4 rounded-2xl text-sm font-black border border-red-400 shadow-[0_0_15px_rgba(239,68,68,0.3)]">RANDOM</button>
+        <button onclick="setResult('right')" id="ctrlRight" class="bg-zinc-800 py-4 rounded-2xl text-sm font-black border border-white/5 hover:bg-red-600 transition">TÀI THẮNG</button>
+    </div>
+    <div class="bg-black/50 p-4 rounded-2xl border border-white/5 text-xs text-gray-400 italic mt-4 text-center">
+        <i class="fa-solid fa-circle-info mr-1 text-red-500"></i> Khi chọn "Xỉu" hoặc "Tài", hệ thống sẽ can thiệp kết quả phiên tiếp theo. Chỉ có tác dụng khi phiên đang ở phase "betting".
+    </div>
+</div>
+<div class="grid grid-cols-2 gap-6 mb-8">
+    <div class="admin-card p-6 text-center">
+        <p class="text-gray-500 text-xs uppercase mb-1">Tổng cược XỈU</p>
+        <p class="text-xl font-black text-yellow-400" id="adminTotalLeft">@Model.TotalBetLeft.ToString("N0")đ</p>
+    </div>
+    <div class="admin-card p-6 text-center">
+        <p class="text-gray-500 text-xs uppercase mb-1">Tổng cược TÀI</p>
+        <p class="text-xl font-black text-yellow-400" id="adminTotalRight">@Model.TotalBetRight.ToString("N0")đ</p>
+    </div>
+</div>
+<div class="admin-card p-6">
+    <h3 class="text-sm font-black text-gray-400 uppercase mb-4">Lịch sử 24 phiên</h3>
+    <div class="flex flex-wrap gap-2">
+        @foreach (var r in Model.GameHistory)
+        {
+            var isTai = r == "tai";
+            <div class="w-8 h-8 rounded-full @(isTai ? "bg-red-500 text-white" : "bg-white text-black") flex items-center justify-center text-xs font-bold">@(isTai ? "T" : "X")</div>
+        }
+    </div>
+</div>
+@section Scripts {
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
+<script>
+async function setResult(mode) {
+    await fetch('/Admin/SetResult?mode=' + mode, { method: 'POST' });
+    const active = "bg-red-600 py-4 rounded-2xl text-sm font-black border border-red-400 shadow-[0_0_15px_rgba(239,68,68,0.3)]";
+    const inactive = "bg-zinc-800 py-4 rounded-2xl text-sm font-black border border-white/5 hover:bg-red-600 transition";
+    document.getElementById('ctrlLeft').className = mode === 'left' ? active : inactive;
+    document.getElementById('ctrlRandom').className = mode === 'random' ? active : inactive;
+    document.getElementById('ctrlRight').className = mode === 'right' ? active : inactive;
+}
+
+// SignalR Real-time Updates
+const connection = new signalR.HubConnectionBuilder()
+    .withUrl("/gamehub")
+    .withAutomaticReconnect()
+    .build();
+
+connection.on("TimerUpdate", (data) => {
+    const timerEl = document.getElementById('adminTimer');
+    if (timerEl) {
+        timerEl.textContent = data.timeLeft;
+        timerEl.className = data.timeLeft <= 5 
+            ? "text-2xl font-black text-red-500 animate-pulse" 
+            : "text-2xl font-black text-yellow-400";
+    }
+    const phaseEl = document.getElementById('adminPhase');
+    if (phaseEl) {
+        phaseEl.textContent = data.phase.toUpperCase();
+        phaseEl.className = data.phase === 'betting' 
+            ? "text-2xl font-black text-green-400" 
+            : "text-2xl font-black text-red-400";
+    }
+});
+
+connection.on("TotalBetsUpdate", (data) => {
+    const leftEl = document.getElementById('adminTotalLeft');
+    const rightEl = document.getElementById('adminTotalRight');
+    if (leftEl) leftEl.textContent = data.leftTotal.toLocaleString() + "đ";
+    if (rightEl) rightEl.textContent = data.rightTotal.toLocaleString() + "đ";
+});
+
+connection.start()
+    .then(() => connection.invoke("JoinAdmin"))
+    .catch(err => console.error(err));
+</script>
+}

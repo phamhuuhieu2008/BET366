@@ -1,0 +1,424 @@
+@{ ViewData["Title"] = "BET366 - Luxury Casino"; }
+
+<div id="lobbyContainer" class="flex flex-col h-full overflow-hidden bg-[#0A0A0B]">
+    <!-- Premium Header -->
+    <header class="info-bar sticky top-0 z-50 px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="avatar-ring haptic-btn" onclick="openModal('profileModal')">
+                <div class="avatar-inner">
+                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=@User.Identity?.Name" alt="Avatar" />
+                </div>
+            </div>
+            <div class="flex flex-col">
+                <span class="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Chào mừng,</span>
+                <span id="profileUsername" class="font-black text-xs gold-gradient-text">@User.Identity?.Name</span>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-4">
+            <div class="capsule-balance">
+                <span id="balance" class="text-sm font-black text-yellow-400">0</span>
+                <div class="btn-plus-emerald haptic-btn" onclick="openModal('depositModal')">+</div>
+            </div>
+            <form asp-controller="Account" asp-action="Logout" method="post" class="haptic-btn">
+                <button type="submit" class="text-zinc-500 hover:text-white transition-colors">
+                    <i class="fa-solid fa-right-from-bracket text-lg"></i>
+                </button>
+            </form>
+        </div>
+    </header>
+
+    <!-- Marquee Notification -->
+    <div class="marquee-bar">
+        <div class="marquee-content">
+            <i class="fa-solid fa-bullhorn text-yellow-500 mr-2"></i>
+            Chúc mừng người chơi <span class="text-white font-bold">@User.Identity?.Name</span> vừa thắng lớn tại nổ hũ Thần Tài... 
+            <span class="mx-10"></span>
+            Hệ thống nạp rút tự động 24/7 siêu tốc...
+        </div>
+    </div>
+
+    <main class="flex-1 overflow-y-auto custom-scroll pb-24 px-4 space-y-6 pt-4">
+        <!-- Banner Carousel (Placeholder) -->
+        <div class="relative w-full h-32 rounded-3xl overflow-hidden shadow-2xl border border-white/5">
+            <img src="https://images.unsplash.com/photo-1518893063132-36e46dbe2428?auto=format&fit=crop&q=80&w=800" class="w-full h-full object-cover" />
+            <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-4">
+                <div class="gold-gradient-text font-black text-lg italic uppercase tracking-tighter">SỰ KIỆN X6 HŨ THẦN TÀI</div>
+            </div>
+        </div>
+
+        <!-- Category Tabs -->
+        <div class="flex gap-4 overflow-x-auto no-scrollbar py-2">
+            <div class="px-6 py-2 rounded-full bg-yellow-500 text-black font-black text-[10px] uppercase shadow-lg shadow-yellow-500/20 whitespace-nowrap">Tất cả</div>
+            <div class="px-6 py-2 rounded-full bg-zinc-900 text-zinc-500 font-black text-[10px] uppercase whitespace-nowrap hover:text-white transition">Nổ hũ</div>
+            <div onclick="showMaintenance()" class="px-6 py-2 rounded-full bg-zinc-900 text-zinc-500 font-black text-[10px] uppercase whitespace-nowrap hover:text-white transition cursor-pointer">Casino</div>
+            <div onclick="showMaintenance()" class="px-6 py-2 rounded-full bg-zinc-900 text-zinc-500 font-black text-[10px] uppercase whitespace-nowrap hover:text-white transition cursor-pointer">Mini Game</div>
+        </div>
+
+        <!-- Game Grid -->
+        <div class="grid grid-cols-2 gap-4">
+            <!-- Tài Xỉu Card -->
+            <div onclick="toggleGame('taiXiu')" class="game-card group cursor-pointer">
+                <div class="game-ribbon">HOT</div>
+                <img src="https://images.unsplash.com/photo-1596838132731-dd967be6db90?auto=format&fit=crop&q=80&w=300" class="game-thumb" />
+                <div class="p-3 text-center">
+                    <div class="font-black text-xs uppercase tracking-widest text-white group-hover:text-yellow-500 transition">TÀI XỈU</div>
+                    <div class="text-[8px] text-zinc-500 font-bold mt-0.5">NGƯỜI CHƠI: 1,284</div>
+                </div>
+            </div>
+
+            <!-- Nổ Hũ Thần Tài Card -->
+            <div onclick="toggleGame('slot')" class="game-card group cursor-pointer">
+                <div class="game-ribbon" style="background: #2ECC71">NEW</div>
+                <img src="https://images.unsplash.com/photo-1518893063132-36e46dbe2428?auto=format&fit=crop&q=80&w=300" class="game-thumb" />
+                <div class="p-3 text-center">
+                    <div class="font-black text-xs uppercase tracking-widest text-white">NỔ HŨ THẦN TÀI</div>
+                    <div class="text-[8px] text-zinc-400 font-bold mt-0.5 gold-gradient-text">HŨ: 125,481,000đ</div>
+                </div>
+            </div>
+
+            <!-- Xóc Đĩa Card -->
+            <div onclick="toggleGame('xocDia')" class="game-card group cursor-pointer">
+                <img src="https://images.unsplash.com/photo-1511193311914-0346f16efe90?auto=format&fit=crop&q=80&w=300" class="game-thumb" />
+                <div class="p-3 text-center">
+                    <div class="font-black text-xs uppercase tracking-widest text-white">XÓC ĐĨA</div>
+                    <div class="text-[8px] text-zinc-500 font-bold mt-0.5">NGƯỜI CHƠI: 842</div>
+                </div>
+            </div>
+
+            <!-- Bầu Cua Card -->
+            <div onclick="toggleGame('bauCua')" class="game-card group cursor-pointer">
+                <img src="https://images.unsplash.com/photo-1606167668584-78701c57f13d?auto=format&fit=crop&q=80&w=300" class="game-thumb" />
+                <div class="p-3 text-center">
+                    <div class="font-black text-xs uppercase tracking-widest text-white">BẦU CUA</div>
+                    <div class="text-[8px] text-zinc-500 font-bold mt-0.5">NGƯỜI CHƠI: 561</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bottom Dock Footer -->
+    <nav class="bottom-dock">
+        <div onclick="location.reload()" class="flex flex-col items-center gap-1 text-yellow-500 haptic-btn">
+            <i class="fa-solid fa-house text-lg"></i>
+            <span class="text-[8px] font-black uppercase">Trang chủ</span>
+        </div>
+        <div onclick="openModal('historyModal')" class="flex flex-col items-center gap-1 text-zinc-500 haptic-btn">
+            <i class="fa-solid fa-clock-rotate-left text-lg"></i>
+            <span class="text-[8px] font-black uppercase">Lịch sử</span>
+        </div>
+        <div onclick="openModal('depositModal')" class="dock-action-center haptic-btn">
+            <i class="fa-solid fa-plus"></i>
+        </div>
+        <div onclick="openModal('withdrawModal')" class="flex flex-col items-center gap-1 text-zinc-500 haptic-btn">
+            <i class="fa-solid fa-money-bill-transfer text-lg"></i>
+            <span class="text-[8px] font-black uppercase">Rút tiền</span>
+        </div>
+        <div onclick="openModal('profileModal')" class="flex flex-col items-center gap-1 text-zinc-500 haptic-btn">
+            <i class="fa-solid fa-user text-lg"></i>
+            <span class="text-[8px] font-black uppercase">Cá nhân</span>
+        </div>
+    </nav>
+</div>
+
+<!-- Tai Xiu Game Overlay -->
+<div id="taiXiuGame" class="fixed inset-0 z-[200] bg-black/95 hidden flex-col">
+    <header class="p-4 flex items-center justify-between border-b border-white/5">
+        <div onclick="toggleGame('taiXiu')" class="h-10 w-10 flex items-center justify-center bg-zinc-900 rounded-full text-white haptic-btn">
+            <i class="fa-solid fa-chevron-left"></i>
+        </div>
+        <div class="flex flex-col items-center">
+            <span class="text-[8px] text-zinc-500 font-black uppercase tracking-[0.3em]">Game phiên</span>
+            <span id="sessionCodeDisplay" class="text-[10px] font-bold text-yellow-500">#000000</span>
+        </div>
+        <div onclick="openModal('chartModal')" class="h-10 w-10 flex items-center justify-center bg-zinc-900 rounded-full text-yellow-500 haptic-btn">
+            <i class="fa-solid fa-chart-line"></i>
+        </div>
+    </header>
+
+    <div class="flex-1 flex flex-col items-center justify-between py-6 px-4">
+        <!-- Status & Timer -->
+        <div class="text-center">
+            <div id="phaseText" class="text-[9px] text-zinc-500 uppercase font-black tracking-widest mb-1">Đang đặt cược</div>
+            <div id="countdown" class="text-6xl font-black text-yellow-400 font-mono tracking-tighter">40</div>
+        </div>
+
+        <!-- Main Game Area -->
+        <div class="w-full flex items-center justify-center gap-4">
+            <!-- XỈU Button -->
+            <div class="flex-1 relative max-w-[140px]">
+                <span id="placedBetXiu" class="bet-badge hidden">0đ</span>
+                <button type="button" onclick="selectSide('left')" id="btnLeft" class="btn-hit-xiu w-full py-12 flex flex-col items-center haptic-btn">
+                    <span class="text-3xl font-black italic">XỈU</span>
+                    <span class="text-[9px] opacity-60 font-bold uppercase tracking-widest mt-1">4-10</span>
+                </button>
+                <div class="text-center mt-3">
+                    <div class="text-[8px] text-zinc-500 font-bold uppercase mb-1">Tổng cược</div>
+                    <div id="totalXiu" class="text-blue-400 font-black text-lg">0</div>
+                </div>
+            </div>
+
+            <!-- 3D Dice Surface -->
+            <div class="casino-surface scale-110">
+                <div id="winEffect" class="win-particles"></div>
+                <div class="plate-container">
+                    <div id="mainPlate" class="relative w-full h-full flex items-center justify-center gap-1">
+                        <div id="bowl" class="bowl absolute inset-0 z-50 rounded-full"></div>
+                        <div class="dice-wrapper"><div id="dice1" class="cube"><div class="face-1"></div><div class="face-2"></div><div class="face-3"></div><div class="face-4"></div><div class="face-5"></div><div class="face-6"></div></div></div>
+                        <div class="dice-wrapper"><div id="dice2" class="cube"><div class="face-1"></div><div class="face-2"></div><div class="face-3"></div><div class="face-4"></div><div class="face-5"></div><div class="face-6"></div></div></div>
+                        <div class="dice-wrapper"><div id="dice3" class="cube"><div class="face-1"></div><div class="face-2"></div><div class="face-3"></div><div class="face-4"></div><div class="face-5"></div><div class="face-6"></div></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TÀI Button -->
+            <div class="flex-1 relative max-w-[140px]">
+                <span id="placedBetTai" class="bet-badge hidden">0đ</span>
+                <button type="button" onclick="selectSide('right')" id="btnRight" class="btn-hit-tai w-full py-12 flex flex-col items-center haptic-btn">
+                    <span class="text-3xl font-black italic">TÀI</span>
+                    <span class="text-[9px] opacity-60 font-bold uppercase tracking-widest mt-1">11-17</span>
+                </button>
+                <div class="text-center mt-3">
+                    <div class="text-[8px] text-zinc-500 font-bold uppercase mb-1">Tổng cược</div>
+                    <div id="totalTai" class="text-red-500 font-black text-lg">0</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="result" class="h-10 flex items-center justify-center"></div>
+
+        <!-- Bet Controls -->
+        <div class="w-full max-w-md space-y-4">
+            <div id="gameHistoryChart" class="flex gap-2 overflow-x-auto no-scrollbar justify-center pb-2">
+                <!-- History dots -->
+            </div>
+            
+            <div class="flex justify-center gap-2 overflow-x-auto no-scrollbar py-2">
+                <div onclick="addBetAmount(10000)" class="chip chip-10k scale-90">10K</div>
+                <div onclick="addBetAmount(50000)" class="chip chip-50k scale-90">50K</div>
+                <div onclick="addBetAmount(100000)" class="chip chip-100k scale-90">100K</div>
+                <div onclick="addBetAmount(500000)" class="chip chip-500k scale-90">500K</div>
+                <div onclick="setAllIn()" class="chip chip-max scale-90">MAX</div>
+            </div>
+
+            <div class="flex gap-2 bg-zinc-900/50 p-1.5 rounded-2xl border border-white/5">
+                <input type="number" id="betAmount" value="10000" class="flex-1 bg-transparent px-4 font-black text-yellow-400 outline-none text-xl" />
+                <button onclick="placeBet()" class="bg-yellow-500 text-black px-8 py-3 rounded-xl font-black text-sm haptic-btn">ĐẶT CƯỢC</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slot Game Overlay -->
+<div id="slotGame" class="fixed inset-0 z-[200] bg-black/95 hidden flex-col">
+    <header class="p-4 flex items-center justify-between border-b border-white/5 bg-zinc-900/50">
+        <div onclick="toggleGame('slot')" class="h-10 w-10 flex items-center justify-center bg-zinc-800 rounded-full text-white haptic-btn">
+            <i class="fa-solid fa-chevron-left"></i>
+        </div>
+        <div class="flex flex-col items-center">
+            <span class="text-[8px] text-zinc-500 font-black uppercase tracking-[0.3em]">Nổ hũ</span>
+            <span class="text-xs font-black gold-gradient-text uppercase">THẦN TÀI</span>
+        </div>
+        <div class="h-10 w-10 flex items-center justify-center bg-zinc-800 rounded-full text-yellow-500 haptic-btn">
+            <i class="fa-solid fa-circle-info"></i>
+        </div>
+    </header>
+
+    <div class="flex-1 flex flex-col items-center justify-center p-4 space-y-8">
+        <!-- Jackpot Display -->
+        <div class="w-full max-w-sm text-center">
+            <div class="text-[10px] text-zinc-400 font-black uppercase tracking-widest mb-1">JACKPOT</div>
+            <div id="slotJackpot" class="text-4xl font-black italic gold-gradient-text drop-shadow-[0_0_15px_rgba(191,149,63,0.5)]">
+                100,000,000đ
+            </div>
+        </div>
+
+        <!-- Slot Reels -->
+        <div class="w-full max-w-sm bg-zinc-900 border-4 border-zinc-800 rounded-[30px] p-2 shadow-2xl relative">
+            <div class="absolute -inset-1 border border-white/5 rounded-[31px] pointer-events-none"></div>
+            <div class="grid grid-cols-3 gap-2 bg-black rounded-[22px] overflow-hidden p-2 relative h-48">
+                <!-- Winning Line Indicators -->
+                <div class="absolute inset-0 z-10 pointer-events-none border-y border-white/5 opacity-20"></div>
+                <div class="absolute inset-0 z-10 pointer-events-none flex items-center"><div class="w-full h-px bg-yellow-500/20"></div></div>
+                
+                <!-- Reel 1 -->
+                <div class="reel flex flex-col items-center gap-4 transition-all duration-[2000ms] ease-[cubic-bezier(0.45,0.05,0.55,0.95)]" id="reel0">
+                    <div class="symbol h-12 flex items-center justify-center text-3xl">🍒</div>
+                    <div class="symbol h-12 flex items-center justify-center text-3xl">💎</div>
+                    <div class="symbol h-12 flex items-center justify-center text-3xl">🍀</div>
+                </div>
+                <!-- Reel 2 -->
+                <div class="reel flex flex-col items-center gap-4 transition-all duration-[2500ms] ease-[cubic-bezier(0.45,0.05,0.55,0.95)]" id="reel1">
+                    <div class="symbol h-12 flex items-center justify-center text-3xl">🔔</div>
+                    <div class="symbol h-12 flex items-center justify-center text-3xl">💰</div>
+                    <div class="symbol h-12 flex items-center justify-center text-3xl">⭐</div>
+                </div>
+                <!-- Reel 3 -->
+                <div class="reel flex flex-col items-center gap-4 transition-all duration-[3000ms] ease-[cubic-bezier(0.45,0.05,0.55,0.95)]" id="reel2">
+                    <div class="symbol h-12 flex items-center justify-center text-3xl">🍊</div>
+                    <div class="symbol h-12 flex items-center justify-center text-3xl">7️⃣</div>
+                    <div class="symbol h-12 flex items-center justify-center text-3xl">👺</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="w-full max-w-sm space-y-6">
+            <div class="flex justify-between items-center bg-zinc-900/50 p-4 rounded-2xl border border-white/5">
+                <div class="flex flex-col">
+                    <span class="text-[9px] text-zinc-500 font-black uppercase">Mức cược</span>
+                    <select id="slotBetAmount" class="bg-transparent text-white font-black outline-none appearance-none">
+                        <option value="10000">10,000đ</option>
+                        <option value="50000">50,000đ</option>
+                        <option value="100000">100,000đ</option>
+                        <option value="500000">500,000đ</option>
+                    </select>
+                </div>
+                <div class="flex flex-col text-right">
+                    <span class="text-[9px] text-zinc-500 font-black uppercase">Tổng cược</span>
+                    <span class="text-sm font-black text-white">x5 Dòng</span>
+                </div>
+            </div>
+
+            <button onclick="spinSlot()" id="spinBtn" class="w-full py-5 rounded-2xl bg-gradient-to-r from-yellow-400 to-yellow-600 text-black font-black text-xl shadow-[0_10px_30px_rgba(191,149,63,0.3)] haptic-btn">
+                QUAY NGAY
+            </button>
+        </div>
+    </div>
+</div>
+<!-- Xóc Đĩa Game Overlay -->
+<div id="xocDiaGame" class="fixed inset-0 z-[200] bg-black/95 hidden flex-col">
+    <header class="p-4 flex items-center justify-between border-b border-white/5">
+        <div onclick="toggleGame('xocDia')" class="h-10 w-10 flex items-center justify-center bg-zinc-900 rounded-full text-white haptic-btn">
+            <i class="fa-solid fa-chevron-left"></i>
+        </div>
+        <div class="flex flex-col items-center">
+            <span class="text-[8px] text-zinc-500 font-black uppercase tracking-[0.3em]">Game phiên</span>
+            <span class="text-[10px] font-bold text-yellow-500">#XD8888</span>
+        </div>
+        <div class="h-10 w-10 flex items-center justify-center bg-zinc-900 rounded-full text-yellow-500">
+            <i class="fa-solid fa-circle-info"></i>
+        </div>
+    </header>
+
+    <div class="flex-1 flex flex-col items-center justify-center p-6 space-y-8">
+        <!-- Coins Result Area -->
+        <div class="relative w-64 h-64 bg-zinc-900/50 rounded-full border-8 border-zinc-800 shadow-2xl flex items-center justify-center overflow-hidden">
+            <div id="xocDiaPlate" class="w-48 h-48 bg-white/10 rounded-full border-4 border-white/5 flex items-center justify-center transition-transform duration-500">
+                <div id="xocDiaCoins" class="grid grid-cols-2 gap-4">
+                    <div class="w-8 h-8 rounded-full bg-red-500 shadow-lg"></div>
+                    <div class="w-8 h-8 rounded-full bg-red-500 shadow-lg"></div>
+                    <div class="w-8 h-8 rounded-full bg-white shadow-lg"></div>
+                    <div class="w-8 h-8 rounded-full bg-white shadow-lg"></div>
+                </div>
+            </div>
+            <div id="xocDiaBowl" class="bowl absolute inset-0 z-50 rounded-full bg-gradient-to-br from-zinc-700 to-zinc-900 border-4 border-zinc-800 shadow-2xl"></div>
+        </div>
+
+        <!-- Betting Buttons -->
+        <div class="grid grid-cols-2 gap-4 w-full max-w-sm">
+            <div class="relative">
+                <span id="placedBetXocDiaChan" class="bet-badge hidden">0đ</span>
+                <button id="btnXocDiaChan" onclick="selectXocDiaSide('chan')" class="w-full py-6 rounded-2xl bg-zinc-900/80 border border-white/5 text-center haptic-btn transition-all">
+                    <span class="block text-2xl font-black text-white">CHẴN</span>
+                    <span class="text-[10px] text-zinc-500 font-bold uppercase">x2.0</span>
+                </button>
+            </div>
+            <div class="relative">
+                <span id="placedBetXocDiaLe" class="bet-badge hidden">0đ</span>
+                <button id="btnXocDiaLe" onclick="selectXocDiaSide('le')" class="w-full py-6 rounded-2xl bg-zinc-900/80 border border-white/5 text-center haptic-btn transition-all">
+                    <span class="block text-2xl font-black text-white">LẺ</span>
+                    <span class="text-[10px] text-zinc-500 font-bold uppercase">x2.0</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Bet Input -->
+        <div class="w-full max-w-sm">
+            <input type="number" id="xocDiaBetAmount" value="10000" class="w-full bg-zinc-900 border border-white/5 rounded-2xl p-4 text-center text-xl font-black text-yellow-500 outline-none" />
+        </div>
+        
+        <button id="xocDiaSpinBtn" onclick="playXocDia()" class="w-full max-w-sm py-5 rounded-2xl bg-gradient-to-r from-red-600 to-red-800 text-white font-black text-xl shadow-xl haptic-btn">
+            XÓC ĐĨA & ĐẶT CƯỢC
+        </button>
+    </div>
+</div>
+
+<!-- Bầu Cua Game Overlay -->
+<div id="bauCuaGame" class="fixed inset-0 z-[200] bg-black/95 hidden flex-col">
+    <header class="p-4 flex items-center justify-between border-b border-white/5">
+        <div onclick="toggleGame('bauCua')" class="h-10 w-10 flex items-center justify-center bg-zinc-900 rounded-full text-white haptic-btn">
+            <i class="fa-solid fa-chevron-left"></i>
+        </div>
+        <div class="flex flex-col items-center">
+            <span class="text-[8px] text-zinc-500 font-black uppercase tracking-[0.3em]">Game phiên</span>
+            <span class="text-[10px] font-bold text-yellow-500">#BC9999</span>
+        </div>
+        <div class="h-10 w-10 flex items-center justify-center bg-zinc-900 rounded-full text-yellow-500">
+            <i class="fa-solid fa-circle-info"></i>
+        </div>
+    </header>
+
+    <div class="flex-1 flex flex-col items-center justify-between p-4 py-8">
+        <!-- Result Dices -->
+        <div id="bauCuaResults" class="flex gap-4 justify-center py-4">
+            <div class="w-16 h-16 bg-zinc-800 rounded-2xl flex items-center justify-center text-3xl shadow-xl border border-white/5">🦌</div>
+            <div class="w-16 h-16 bg-zinc-800 rounded-2xl flex items-center justify-center text-3xl shadow-xl border border-white/5">🦀</div>
+            <div class="w-16 h-16 bg-zinc-800 rounded-2xl flex items-center justify-center text-3xl shadow-xl border border-white/5">🎃</div>
+        </div>
+
+        <!-- Betting Board -->
+        <div class="grid grid-cols-3 gap-2 w-full">
+            <div id="bc-nai" onclick="selectBauCuaChoice('nai')" class="relative aspect-square bg-zinc-900/50 rounded-2xl border border-white/5 flex flex-col items-center justify-center gap-2 haptic-btn transition-all">
+                <span id="placedBetBC-nai" class="bet-badge hidden">0đ</span>
+                <span class="text-4xl">🦌</span>
+                <span class="text-[10px] font-black text-zinc-500">NAI</span>
+            </div>
+            <div id="bc-bau" onclick="selectBauCuaChoice('bau')" class="relative aspect-square bg-zinc-900/50 rounded-2xl border border-white/5 flex flex-col items-center justify-center gap-2 haptic-btn transition-all">
+                <span id="placedBetBC-bau" class="bet-badge hidden">0đ</span>
+                <span class="text-4xl">🎃</span>
+                <span class="text-[10px] font-black text-zinc-500">BẦU</span>
+            </div>
+            <div id="bc-ga" onclick="selectBauCuaChoice('ga')" class="relative aspect-square bg-zinc-900/50 rounded-2xl border border-white/5 flex flex-col items-center justify-center gap-2 haptic-btn transition-all">
+                <span id="placedBetBC-ga" class="bet-badge hidden">0đ</span>
+                <span class="text-4xl">🐓</span>
+                <span class="text-[10px] font-black text-zinc-500">GÀ</span>
+            </div>
+            <div id="bc-ca" onclick="selectBauCuaChoice('ca')" class="relative aspect-square bg-zinc-900/50 rounded-2xl border border-white/5 flex flex-col items-center justify-center gap-2 haptic-btn transition-all">
+                <span id="placedBetBC-ca" class="bet-badge hidden">0đ</span>
+                <span class="text-4xl">🐟</span>
+                <span class="text-[10px] font-black text-zinc-500">CÁ</span>
+            </div>
+            <div id="bc-cua" onclick="selectBauCuaChoice('cua')" class="relative aspect-square bg-zinc-900/50 rounded-2xl border border-white/5 flex flex-col items-center justify-center gap-2 haptic-btn transition-all">
+                <span id="placedBetBC-cua" class="bet-badge hidden">0đ</span>
+                <span class="text-4xl">🦀</span>
+                <span class="text-[10px] font-black text-zinc-500">CUA</span>
+            </div>
+            <div id="bc-tom" onclick="selectBauCuaChoice('tom')" class="relative aspect-square bg-zinc-900/50 rounded-2xl border border-white/5 flex flex-col items-center justify-center gap-2 haptic-btn transition-all">
+                <span id="placedBetBC-tom" class="bet-badge hidden">0đ</span>
+                <span class="text-4xl">🦐</span>
+                <span class="text-[10px] font-black text-zinc-500">TÔM</span>
+            </div>
+        </div>
+
+        <!-- Bet Input -->
+        <div class="w-full">
+            <input type="number" id="bauCuaBetAmount" value="10000" class="w-full bg-zinc-900 border border-white/5 rounded-2xl p-4 text-center text-xl font-black text-yellow-500 outline-none" />
+        </div>
+
+        <button id="bauCuaSpinBtn" onclick="playBauCua()" class="w-full py-5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-700 text-white font-black text-xl shadow-xl haptic-btn">
+            LẮC & ĐẶT CƯỢC
+        </button>
+    </div>
+</div>
+
+<!-- All existing modals preserved below -->
+<div id="toast" class="fixed top-24 left-1/2 -translate-x-1/2 z-[200] hidden px-6 py-3 rounded-full text-white font-bold shadow-2xl backdrop-blur-xl"></div>
+
+<partial name="_GameModals" />
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/canvas-confetti/1.6.0/confetti.browser.min.js"></script>
+    <script src="~/js/game.js" asp-append-version="true"></script>
+}

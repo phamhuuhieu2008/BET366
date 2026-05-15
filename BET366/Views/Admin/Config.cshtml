@@ -1,0 +1,43 @@
+@model List<BET366.Models.SystemConfig>
+@{ Layout = "_AdminLayout"; ViewData["Title"] = "Cấu hình hệ thống"; }
+<h1 class="text-2xl font-black mb-8">⚙️ Cấu hình hệ thống</h1>
+<div class="admin-card overflow-hidden">
+    <table class="w-full text-sm">
+        <thead class="bg-zinc-800 text-gray-400 uppercase text-xs">
+            <tr>
+                <th class="px-6 py-4 text-left">Key</th>
+                <th class="px-6 py-4 text-left">Mô tả</th>
+                <th class="px-6 py-4 text-left">Giá trị</th>
+                <th class="px-6 py-4 text-center">Lưu</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-white/5">
+            @foreach (var c in Model)
+            {
+                <tr class="hover:bg-white/5 transition">
+                    <td class="px-6 py-4 font-mono text-yellow-400 text-xs">@c.ConfigKey</td>
+                    <td class="px-6 py-4 text-gray-400 text-xs">@c.Description</td>
+                    <td class="px-6 py-4">
+                        <input type="text" value="@c.ConfigValue" id="cfg-@c.Id"
+                               class="bg-transparent border border-white/10 rounded-lg px-3 py-2 text-white w-full outline-none focus:border-yellow-400" />
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        <button onclick="saveConfig(@c.Id)" class="bg-emerald-500/20 text-emerald-400 px-4 py-2 rounded-lg text-xs font-black hover:bg-emerald-500 hover:text-white transition">
+                            <i class="fa-solid fa-check"></i> Lưu
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+@section Scripts {
+<script>
+async function saveConfig(id) {
+    const val = document.getElementById(`cfg-${id}`).value;
+    const res = await fetch(`/Admin/UpdateConfig/${id}?value=${encodeURIComponent(val)}`, { method: 'POST' });
+    const data = await res.json();
+    if (data.success) alert("✅ Đã lưu cấu hình!");
+}
+</script>
+}

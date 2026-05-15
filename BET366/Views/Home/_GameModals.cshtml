@@ -1,0 +1,247 @@
+<!-- 
+    BET366 LUXURY MODALS
+    Glassmorphism + Neon accents
+-->
+
+<style>
+    .modal-glass {
+        background: rgba(10, 10, 10, 0.95);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 223, 0, 0.1);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+    .input-luxury {
+        background: rgba(0, 0, 0, 0.5) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        transition: all 0.3s;
+    }
+    .input-luxury:focus {
+        border-color: #ffdf00 !important;
+        box-shadow: 0 0 15px rgba(255, 223, 0, 0.2);
+    }
+    .btn-gold-luxury {
+        background: linear-gradient(180deg, #ffdf00 0%, #b8860b 100%);
+        color: black;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        transition: all 0.3s;
+    }
+    .btn-gold-luxury:hover {
+        transform: scale(1.02);
+        box-shadow: 0 0 20px rgba(255, 223, 0, 0.4);
+    }
+    .history-card {
+        background: linear-gradient(90deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
+        border-left: 3px solid #ffdf00;
+    }
+</style>
+
+<!-- Modal Nạp Tiền -->
+<div id="depositModal" class="fixed inset-0 bg-black/90 z-[200] hidden flex items-center justify-center p-4">
+    <div class="modal-glass w-full max-w-sm rounded-[30px] overflow-hidden max-h-[95vh] flex flex-col">
+        <div class="relative p-5 text-center border-b border-white/5 flex-shrink-0">
+            <h3 class="text-xl font-black gold-gradient-text uppercase">Nạp Tiền Siêu Tốc</h3>
+            <button onclick="closeModal('depositModal')" class="absolute right-6 top-6 text-zinc-500 hover:text-white transition">
+                <i class="fa-solid fa-circle-xmark text-2xl"></i>
+            </button>
+        </div>
+        
+        <div class="p-6 overflow-y-auto custom-scroll flex-1">
+            <div id="depositStep1" class="space-y-6">
+                <div class="text-center">
+                    <i class="fa-solid fa-building-columns text-4xl text-yellow-500/50 mb-2"></i>
+                    <p class="text-zinc-500 text-xs font-bold uppercase tracking-widest">Chọn số tiền nạp</p>
+                </div>
+                <div class="relative">
+                    <input type="number" id="depositAmount" class="w-full input-luxury rounded-2xl p-5 text-2xl font-black text-yellow-400 text-center outline-none" placeholder="100,000" />
+                    <div class="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-600 font-bold">VND</div>
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="document.getElementById('depositAmount').value=50000" class="bg-zinc-900 py-2 rounded-xl text-[10px] font-bold border border-white/5 hover:border-yellow-500/50 transition">50K</button>
+                    <button onclick="document.getElementById('depositAmount').value=200000" class="bg-zinc-900 py-2 rounded-xl text-[10px] font-bold border border-white/5 hover:border-yellow-500/50 transition">200K</button>
+                    <button onclick="document.getElementById('depositAmount').value=1000000" class="bg-zinc-900 py-2 rounded-xl text-[10px] font-bold border border-white/5 hover:border-yellow-500/50 transition">1M</button>
+                </div>
+                <button type="button" onclick="showTransferInfo()" class="w-full btn-gold-luxury py-5 rounded-2xl shadow-xl">Tiếp Tục <i class="fa-solid fa-arrow-right ml-2"></i></button>
+            </div>
+
+            <div id="depositStep2" class="hidden space-y-4">
+                <div class="relative group">
+                    <div class="absolute inset-0 bg-yellow-500/20 blur-2xl rounded-full opacity-50 group-hover:opacity-100 transition duration-1000"></div>
+                    <div class="relative bg-white p-2 w-2/3 mx-auto rounded-[20px] shadow-2xl">
+                        <img id="qrCodeImg" src="" alt="QR Code" class="w-full aspect-square object-contain" />
+                    </div>
+                </div>
+
+                <div class="space-y-2 bg-black/40 p-4 rounded-2xl border border-white/5">
+                    <div class="flex justify-between items-center"><span class="text-zinc-500 text-[10px] uppercase font-black">Số tiền nạp</span><span id="displayDepositAmount" class="font-black text-yellow-400 text-sm"></span></div>
+                    <div class="flex justify-between items-center"><span class="text-zinc-500 text-[10px] uppercase font-black">Ngân hàng</span><span id="dispBankName" class="font-bold text-white text-xs"></span></div>
+                    <div class="flex justify-between items-center"><span class="text-zinc-500 text-[10px] uppercase font-black">Số tài khoản</span><span id="dispBankAccount" class="font-bold text-yellow-400 text-sm tracking-wider"></span></div>
+                    <div class="flex justify-between items-center"><span class="text-zinc-500 text-[10px] uppercase font-black">Chủ tài khoản</span><span id="dispBankHolder" class="font-bold text-white text-xs uppercase"></span></div>
+                    <div class="flex justify-between items-center pt-2 border-t border-white/5"><span class="text-zinc-500 text-[10px] uppercase font-black">Nội dung</span><span id="dispTransferMsg" class="px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-lg font-black text-sm"></span></div>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="text-[10px] text-zinc-500 font-bold uppercase ml-2">Xác nhận Tên người chuyển (không dấu)</label>
+                    <input type="text" id="confirmSenderName" class="w-full input-luxury rounded-xl p-3 text-sm font-black text-yellow-400 outline-none" placeholder="Ví dụ: NGUYEN VAN A" />
+                </div>
+
+                <div class="flex gap-2">
+                    <button onclick="closeModal('depositModal')" class="flex-1 bg-zinc-800 text-zinc-400 font-bold py-3 rounded-2xl hover:text-white transition">Hủy</button>
+                    <button onclick="confirmDeposit()" class="flex-[2] bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3 rounded-2xl shadow-lg shadow-emerald-900/20 transition uppercase tracking-tighter text-sm">Đã chuyển tiền</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Rút Tiền -->
+<div id="withdrawModal" class="fixed inset-0 bg-black/90 z-[200] hidden flex items-center justify-center p-4">
+    <div class="modal-glass w-full max-w-sm rounded-[40px] overflow-hidden">
+        <div class="relative p-6 text-center border-b border-white/5">
+            <h3 class="text-xl font-black text-blue-400 uppercase tracking-widest italic">Rút Tiền Nhanh</h3>
+            <button onclick="closeModal('withdrawModal')" class="absolute right-6 top-6 text-zinc-500 hover:text-white transition">
+                <i class="fa-solid fa-circle-xmark text-2xl"></i>
+            </button>
+        </div>
+
+        <div class="p-8 space-y-5">
+            <div class="space-y-1">
+                <label class="text-[10px] text-zinc-500 font-bold uppercase ml-2">Ngân hàng thụ hưởng</label>
+                <select id="withdrawBank" class="w-full input-luxury rounded-2xl p-4 text-white outline-none appearance-none">
+                    <option>Vietcombank</option><option>MB Bank</option><option>Techcombank</option><option>Vietinbank</option><option>Momo</option>
+                </select>
+            </div>
+            <div class="space-y-1">
+                <label class="text-[10px] text-zinc-500 font-bold uppercase ml-2">Tên chủ tài khoản</label>
+                <input type="text" id="withdrawHolder" class="w-full input-luxury rounded-2xl p-4 text-white font-bold placeholder:text-zinc-700 uppercase" placeholder="NGUYEN VAN A" />
+            </div>
+            <div class="space-y-1">
+                <label class="text-[10px] text-zinc-500 font-bold uppercase ml-2">Số tài khoản</label>
+                <input type="text" id="withdrawNumber" class="w-full input-luxury rounded-2xl p-4 text-white font-bold tracking-widest" placeholder="1900xxxxxx" />
+            </div>
+            <div class="space-y-1">
+                <label class="text-[10px] text-zinc-500 font-bold uppercase ml-2">Số tiền muốn rút (VND)</label>
+                <input type="number" id="withdrawAmount" class="w-full input-luxury rounded-2xl p-4 text-2xl font-black text-blue-400 outline-none" placeholder="0" />
+            </div>
+
+            <button type="button" onclick="handleWithdraw()" class="w-full bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-black py-5 rounded-2xl shadow-xl shadow-blue-900/20 uppercase tracking-widest mt-4 active:scale-95 transition">Gửi yêu cầu rút tiền</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Lịch Sử -->
+<div id="historyModal" class="fixed inset-0 bg-black/95 z-[200] hidden flex items-center justify-center p-4">
+    <div class="modal-glass w-full max-w-md rounded-[40px] overflow-hidden max-h-[85vh] flex flex-col">
+        <div class="relative p-6 text-center border-b border-white/5 bg-zinc-900/50">
+            <h3 class="text-xl font-black gold-gradient-text uppercase tracking-widest">Lịch Sử Giao Dịch</h3>
+            <button onclick="closeModal('historyModal')" class="absolute right-6 top-6 text-zinc-500 hover:text-white transition">
+                <i class="fa-solid fa-circle-xmark text-2xl"></i>
+            </button>
+        </div>
+
+        <div class="flex p-2 bg-black/40 gap-1 mx-4 mt-4 rounded-2xl border border-white/5">
+            <button onclick="switchHistoryTab('bet')" id="tabBet" class="flex-1 py-3 text-[10px] font-black rounded-xl transition-all duration-300 bg-yellow-500 text-black shadow-lg shadow-yellow-500/20">CƯỢC</button>
+            <button onclick="switchHistoryTab('deposit')" id="tabDeposit" class="flex-1 py-3 text-[10px] font-black rounded-xl transition-all duration-300 text-zinc-500 hover:text-white">NẠP TIỀN</button>
+            <button onclick="switchHistoryTab('withdraw')" id="tabWithdraw" class="flex-1 py-3 text-[10px] font-black rounded-xl transition-all duration-300 text-zinc-500 hover:text-white">RÚT TIỀN</button>
+        </div>
+
+        <div class="p-6 overflow-y-auto flex-1 space-y-3 custom-scroll">
+            <div id="betHistoryList" class="space-y-3"></div>
+            <div id="depositHistoryList" class="space-y-3 hidden"></div>
+            <div id="withdrawHistoryList" class="space-y-3 hidden"></div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .custom-scroll::-webkit-scrollbar { width: 4px; }
+    .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: rgba(255, 223, 0, 0.1); border-radius: 10px; }
+</style>
+
+<!-- Modal Trang Cá Nhân -->
+<div id="profileModal" class="fixed inset-0 bg-black/95 z-[200] hidden flex items-center justify-center p-4">
+    <div class="modal-glass w-full max-w-sm rounded-[40px] overflow-hidden">
+        <div class="relative p-6 text-center border-b border-white/5">
+            <h3 class="text-xl font-black gold-gradient-text uppercase">Trang Cá Nhân</h3>
+            <button onclick="closeModal('profileModal')" class="absolute right-6 top-6 text-zinc-500 hover:text-white transition">
+                <i class="fa-solid fa-circle-xmark text-2xl"></i>
+            </button>
+        </div>
+
+        <div class="p-8 space-y-6">
+            <div class="flex flex-col items-center gap-2">
+                <div class="w-20 h-20 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center shadow-lg">
+                    <i class="fa-solid fa-user text-3xl text-black"></i>
+                </div>
+                <p id="profileUsernameModal" class="text-xl font-black gold-gradient-text">@User.Identity?.Name</p>
+            </div>
+
+            <div class="space-y-4">
+                <div class="bg-black/40 p-4 rounded-2xl border border-white/5 text-center">
+                    <p class="text-[10px] text-zinc-500 uppercase font-black mb-1">Số dư hiện tại</p>
+                    <p class="text-2xl font-black text-yellow-400"><span id="profileBalance">0</span>đ</p>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-[10px] text-zinc-500 font-bold uppercase ml-2">Họ và tên</label>
+                    <input type="text" id="profileFullName" class="w-full input-luxury rounded-xl p-4 text-white font-bold" placeholder="Nhập tên" />
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[10px] text-zinc-500 font-bold uppercase ml-2">Số điện thoại</label>
+                    <input type="text" id="profilePhone" class="w-full input-luxury rounded-xl p-4 text-white font-bold" placeholder="0xxx" />
+                </div>
+            </div>
+
+            <button type="button" onclick="saveProfile()" class="w-full btn-gold-luxury py-5 rounded-2xl shadow-xl mt-2">Lưu Thay Đổi</button>
+        </div>
+    <!-- Modal Biểu Đồ Chi Tiết -->
+<div id="chartModal" class="fixed inset-0 bg-black/95 z-[200] hidden flex items-center justify-center p-4">
+    <div class="modal-glass w-full max-w-4xl rounded-[40px] overflow-hidden flex flex-col max-h-[90vh]">
+        <div class="relative p-6 text-center border-b border-white/5 bg-zinc-900/50">
+            <h3 class="text-xl font-black gold-gradient-text uppercase tracking-widest">Lịch Sử Phiên Chi Tiết</h3>
+            <button onclick="closeModal('chartModal')" class="absolute right-6 top-6 text-zinc-500 hover:text-white transition">
+                <i class="fa-solid fa-circle-xmark text-2xl"></i>
+            </button>
+        </div>
+
+        <div class="p-4 flex-1 overflow-y-auto custom-scroll space-y-4">
+            <!-- Tóm tắt phiên gần nhất -->
+            <div id="latestSessionSummary" class="text-center space-y-1 py-2 bg-yellow-500/10 rounded-2xl border border-yellow-500/20">
+                <p class="text-[10px] font-bold text-yellow-500/50 uppercase tracking-widest">Phiên gần nhất: <span id="latestCode" class="text-yellow-500">#000000</span></p>
+                <p id="latestResultText" class="text-lg font-black text-white italic uppercase">Đang tải...</p>
+            </div>
+
+            <!-- Biểu đồ Tổng Điểm -->
+            <div class="space-y-2">
+                <div class="flex justify-between items-center px-4">
+                    <span class="text-[10px] font-black text-zinc-500 uppercase">Biểu đồ tổng điểm (3-18)</span>
+                    <div class="flex gap-4 text-[10px] font-bold">
+                        <span class="text-blue-400"><i class="fa-solid fa-circle mr-1"></i> XỈU</span>
+                        <span class="text-red-500"><i class="fa-solid fa-circle mr-1"></i> TÀI</span>
+                    </div>
+                </div>
+                <div class="bg-black/40 p-4 rounded-3xl border border-white/5 h-[250px]">
+                    <canvas id="sumChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Biểu đồ Xí Ngầu -->
+            <div class="space-y-2">
+                <div class="flex justify-between items-center px-4">
+                    <span class="text-[10px] font-black text-zinc-500 uppercase">Biểu đồ xí ngầu (1-6)</span>
+                    <div class="flex gap-4 text-[10px] font-bold">
+                        <span class="text-purple-500">Xí ngầu 1</span>
+                        <span class="text-yellow-500">Xí ngầu 2</span>
+                        <span class="text-emerald-500">Xí ngầu 3</span>
+                    </div>
+                </div>
+                <div class="bg-black/40 p-4 rounded-3xl border border-white/5 h-[250px]">
+                    <canvas id="diceChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>

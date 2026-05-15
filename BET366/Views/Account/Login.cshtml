@@ -1,0 +1,35 @@
+@model BET366.Models.ViewModels.LoginViewModel
+@{ Layout = "_Layout"; ViewData["Title"] = "Đăng nhập - BET366"; }
+
+<div class="fixed inset-0 z-[1000] bg-black/95 flex items-center justify-center p-4">
+    <div class="w-full max-w-[400px] auth-card rounded-3xl p-8 border border-yellow-400/20 shadow-2xl">
+        <div class="text-center mb-8">
+            <img src="/huuhieu.png" alt="Logo" class="h-20 w-auto mx-auto mb-4 rounded-2xl shadow-[0_0_20px_rgba(255,223,0,0.4)]" />
+            <span class="text-5xl font-black sunwin-gold tracking-tighter inline-block">BET366</span>
+            <p class="text-gray-400 text-sm mt-2">Đăng nhập để bắt đầu trải nghiệm</p>
+        </div>
+
+        @if (ViewBag.Error != null)
+        {
+            <div class="bg-red-500/20 border border-red-500/50 text-red-400 px-4 py-3 rounded-xl mb-4 text-sm text-center">@ViewBag.Error</div>
+        }
+        @if (TempData["Success"] != null)
+        {
+            <div class="bg-green-500/20 border border-green-500/50 text-green-400 px-4 py-3 rounded-xl mb-4 text-sm text-center">@TempData["Success"]</div>
+        }
+
+        <form asp-action="Login" method="post" class="space-y-4">
+            <input type="text" name="Username" value="@Model?.Username" placeholder="Tên đăng nhập"
+                   class="w-full bg-black border border-gray-700 rounded-xl p-4 outline-none focus:border-yellow-400 text-white" />
+            <input type="password" name="Password" placeholder="Mật khẩu"
+                   class="w-full bg-black border border-gray-700 rounded-xl p-4 outline-none focus:border-yellow-400 text-white" />
+            <button type="submit"
+                    class="w-full bg-yellow-400 text-black font-bold py-4 rounded-xl hover:bg-yellow-300 transition shadow-lg shadow-yellow-400/20">
+                ĐĂNG NHẬP
+            </button>
+            <p class="text-center text-sm text-gray-500">
+                Chưa có tài khoản? <a asp-action="Register" class="text-yellow-400 hover:underline">Đăng ký ngay</a>
+            </p>
+        </form>
+    </div>
+</div>

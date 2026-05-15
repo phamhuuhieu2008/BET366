@@ -1,0 +1,66 @@
+@model List<BET366.Models.Deposit>
+@{ Layout = "_AdminLayout"; ViewData["Title"] = "Quản lý nạp tiền"; }
+
+<h1 class="text-2xl font-black mb-8">💰 Quản lý nạp tiền</h1>
+
+<!-- Pending -->
+<div class="admin-card p-6 mb-6">
+    <h3 class="text-sm font-black text-yellow-400 uppercase mb-4"><i class="fa-solid fa-clock mr-2"></i>Đang chờ duyệt</h3>
+    <div class="space-y-3" id="pendingDeposits">
+        @{ var pending = Model.Where(d => d.Status == "Pending").ToList(); }
+        @if (!pending.Any())
+        {
+            <p class="text-gray-500 text-xs italic">Không có yêu cầu mới</p>
+        }
+        @foreach (var d in pending)
+        {
+            <div class="flex justify-between items-center bg-black/40 px-4 py-3 rounded-xl border border-white/5" id="dep-@d.Id">
+                <div>
+                    <span class="font-bold text-white uppercase">@d.User?.Username</span>
+                    <span class="text-emerald-400 font-bold ml-2">+@d.Amount.ToString("N0")đ</span>
+                    <div class="text-[10px] text-zinc-500 mt-1 italic">
+                        Mã: <span class="text-yellow-500">@d.TransferCode</span> | 
+                        Người gửi: <span class="text-emerald-400 font-bold uppercase">@d.SenderName</span>
+                    </div>
+                    <span class="text-gray-600 text-[10px] block">@d.CreatedAt.ToString("dd/MM HH:mm")</span>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="approveDeposit(@d.Id)" class="bg-emerald-500/20 text-emerald-400 px-4 py-2 rounded-lg font-black text-xs hover:bg-emerald-500 hover:text-white transition">DUYỆT</button>
+                    <button onclick="rejectDeposit(@d.Id)" class="bg-red-500/20 text-red-400 px-4 py-2 rounded-lg font-black text-xs hover:bg-red-500 hover:text-white transition">HỦY</button>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- History -->
+<div class="admin-card p-6">
+    <h3 class="text-sm font-black text-gray-400 uppercase mb-4"><i class="fa-solid fa-history mr-2"></i>Lịch sử</h3>
+    <div class="space-y-2 max-h-96 overflow-y-auto">
+        @foreach (var d in Model.Where(d => d.Status != "Pending"))
+        {
+            var cls = d.Status == "Success" ? "text-green-400" : "text-red-400";
+            <div class="flex justify-between items-center bg-black/20 px-4 py-2 rounded-xl text-xs border border-white/5 opacity-70">
+                <div><span class="font-bold">@d.User?.Username</span> <span class="text-emerald-400 ml-2">+@d.Amount.ToString("N0")đ</span></div>
+                <span class="@cls font-bold">@d.Status</span>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    async function approveDeposit(id) {
+        if (!confirm("Xác nhận DUYỆT nạp tiền?")) return;
+        const res = await fetch(`/Admin/ApproveDeposit/${id}`, { method: 'POST' });
+        const data = await res.json();
+        if (data.success) { document.getElementById(`dep-${id}`)?.remove(); location.reload(); }
+    }
+    async function rejectDeposit(id) {
+        if (!confirm("Hủy yêu cầu nạp tiền?")) return;
+        const res = await fetch(`/Admin/RejectDeposit/${id}`, { method: 'POST' });
+        const data = await res.json();
+        if (data.success) { document.getElementById(`dep-${id}`)?.remove(); location.reload(); }
+    }
+</script>
+}

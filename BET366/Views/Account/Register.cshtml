@@ -1,0 +1,33 @@
+@model BET366.Models.ViewModels.RegisterViewModel
+@{ Layout = "_Layout"; ViewData["Title"] = "Đăng ký - BET366"; }
+
+<div class="fixed inset-0 z-[1000] bg-black/95 flex items-center justify-center p-4">
+    <div class="w-full max-w-[400px] auth-card rounded-3xl p-8 border border-yellow-400/20 shadow-2xl">
+        <div class="text-center mb-8">
+            <img src="/huuhieu.png" alt="Logo" class="h-20 w-auto mx-auto mb-4 rounded-2xl shadow-[0_0_20px_rgba(255,223,0,0.4)]" />
+            <span class="text-5xl font-black sunwin-gold tracking-tighter inline-block">BET366</span>
+            <p class="text-gray-400 text-sm mt-2">Tạo tài khoản mới miễn phí</p>
+        </div>
+
+        @if (ViewBag.Error != null)
+        {
+            <div class="bg-red-500/20 border border-red-500/50 text-red-400 px-4 py-3 rounded-xl mb-4 text-sm text-center">@ViewBag.Error</div>
+        }
+
+        <form asp-action="Register" method="post" class="space-y-4">
+            <input type="text" name="Username" value="@Model?.Username" placeholder="Tên đăng nhập mới"
+                   class="w-full bg-black border border-gray-700 rounded-xl p-4 outline-none focus:border-yellow-400 text-white" />
+            <input type="password" name="Password" placeholder="Mật khẩu"
+                   class="w-full bg-black border border-gray-700 rounded-xl p-4 outline-none focus:border-yellow-400 text-white" />
+            <input type="password" name="ConfirmPassword" placeholder="Nhập lại mật khẩu"
+                   class="w-full bg-black border border-gray-700 rounded-xl p-4 outline-none focus:border-yellow-400 text-white" />
+            <button type="submit"
+                    class="w-full bg-green-500 text-white font-bold py-4 rounded-xl hover:bg-green-400 transition shadow-lg shadow-green-500/20">
+                ĐĂNG KÝ TÀI KHOẢN
+            </button>
+            <p class="text-center text-sm text-gray-500">
+                Đã có tài khoản? <a asp-action="Login" class="text-yellow-400 hover:underline">Đăng nhập</a>
+            </p>
+        </form>
+    </div>
+</div>

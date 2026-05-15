@@ -1,0 +1,68 @@
+@model List<BET366.Models.User>
+@{ Layout = "_AdminLayout"; ViewData["Title"] = "Quản lý thành viên"; }
+
+<h1 class="text-2xl font-black mb-8">👥 Quản lý thành viên</h1>
+
+<div class="admin-card overflow-hidden">
+    <table class="w-full text-sm">
+        <thead class="bg-zinc-800 text-gray-400 uppercase text-xs">
+            <tr>
+                <th class="px-6 py-4 text-left">Username</th>
+                <th class="px-6 py-4 text-left">Họ tên</th>
+                <th class="px-6 py-4 text-left">SĐT</th>
+                <th class="px-6 py-4 text-right">Số dư</th>
+                <th class="px-6 py-4 text-center">Trạng thái</th>
+                <th class="px-6 py-4 text-center">Hành động</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-white/5">
+            @foreach (var u in Model)
+            {
+                <tr class="hover:bg-white/5 transition" id="user-@u.Id">
+                    <td class="px-6 py-4 font-bold">@u.Username</td>
+                    <td class="px-6 py-4 text-gray-400">@(u.FullName ?? "N/A")</td>
+                    <td class="px-6 py-4 text-gray-400">@(u.Phone ?? "N/A")</td>
+                    <td class="px-6 py-4 text-right">
+                        <input type="number" value="@u.Balance" id="bal-@u.Id"
+                               class="bg-transparent border border-white/10 rounded-lg px-3 py-1 text-yellow-400 font-bold w-40 text-right outline-none focus:border-yellow-400" />
+                        <button onclick="updateBalance(@u.Id)" class="text-xs text-emerald-400 hover:text-emerald-300 ml-1"><i class="fa-solid fa-check"></i></button>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        <span class="px-3 py-1 rounded-full text-xs font-bold @(u.UserStatus == 3 ? "bg-red-500/20 text-red-400" : "bg-green-500/20 text-green-400")">
+                            @(u.UserStatus == 3 ? "Khóa" : "Hoạt động")
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-center flex justify-center gap-2">
+                        <button onclick="toggleLock(@u.Id)" class="px-3 py-1 rounded-lg text-xs font-bold @(u.UserStatus == 3 ? "bg-green-500/20 text-green-400 hover:bg-green-500" : "bg-red-500/20 text-red-400 hover:bg-red-500") transition">
+                            <i class="fa-solid @(u.UserStatus == 3 ? "fa-unlock" : "fa-lock")"></i> @(u.UserStatus == 3 ? "Mở" : "Khóa")
+                        </button>
+                        <button onclick="deleteUser(@u.Id)" class="px-3 py-1 rounded-lg text-xs font-bold bg-zinc-800 text-gray-400 hover:bg-red-600 hover:text-white transition">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@section Scripts {
+<script>
+    async function toggleLock(id) {
+        if (!confirm("Xác nhận thay đổi trạng thái?")) return;
+        await fetch(`/Admin/ToggleLock/${id}`, { method: 'POST' });
+        location.reload();
+    }
+    async function deleteUser(id) {
+        if (!confirm("XÓA VĨNH VIỄN user này?")) return;
+        await fetch(`/Admin/DeleteUser/${id}`, { method: 'POST' });
+        document.getElementById(`user-${id}`)?.remove();
+    }
+    async function updateBalance(id) {
+        const val = document.getElementById(`bal-${id}`).value;
+        const res = await fetch(`/Admin/UpdateBalance/${id}?balance=${val}`, { method: 'POST' });
+        const data = await res.json();
+        if (data.success) alert("✅ Đã cập nhật số dư!");
+    }
+</script>
+}
