@@ -1,32 +1,59 @@
 @model BET366.Models.ViewModels.RegisterViewModel
 @{ Layout = "_Layout"; ViewData["Title"] = "Đăng ký - BET366"; }
 
-<div class="fixed inset-0 z-[1000] bg-black/95 flex items-center justify-center p-4">
-    <div class="w-full max-w-[400px] auth-card rounded-3xl p-8 border border-yellow-400/20 shadow-2xl">
-        <div class="text-center mb-8">
-            <img src="/logo.png" alt="Logo" class="h-20 w-auto mx-auto mb-4 rounded-2xl shadow-[0_0_20px_rgba(255,223,0,0.4)]" />
-            <span class="text-5xl font-black sunwin-gold tracking-tighter inline-block">BET366</span>
-            <p class="text-gray-400 text-sm mt-2">Tạo tài khoản mới miễn phí</p>
+<div class="fixed inset-0 z-[1000] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="w-full max-w-[450px] bg-gradient-to-br from-[#2a0404] to-[#0a0000] rounded-xl p-8 border-2 border-[#d4af37] shadow-[0_0_30px_rgba(212,175,55,0.3)] relative overflow-hidden">
+        
+        <!-- Watermark -->
+        <i class="fa-solid fa-crown absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[150px] text-white/5 pointer-events-none"></i>
+
+        <div class="text-center mb-6 relative z-10">
+            <h2 class="text-3xl font-black bg-gradient-to-r from-[#d4af37] to-[#ffd700] text-transparent bg-clip-text uppercase tracking-widest drop-shadow-md mb-1">ĐĂNG KÝ</h2>
+            <p class="text-[#d4af37]/70 text-[10px] uppercase font-bold tracking-[0.2em]">Tạo Tài Khoản Mới Miễn Phí</p>
         </div>
 
         @if (ViewBag.Error != null)
         {
-            <div class="bg-red-500/20 border border-red-500/50 text-red-400 px-4 py-3 rounded-xl mb-4 text-sm text-center">@ViewBag.Error</div>
+            <div class="bg-red-900/30 border border-red-500/50 text-red-400 px-4 py-2 rounded-lg mb-4 text-xs font-bold text-center uppercase tracking-wider relative z-10">@ViewBag.Error</div>
         }
 
-        <form asp-action="Register" method="post" class="space-y-4">
-            <input type="text" name="Username" value="@Model?.Username" placeholder="Tên đăng nhập mới"
-                   class="w-full bg-black border border-gray-700 rounded-xl p-4 outline-none focus:border-yellow-400 text-white" />
-            <input type="password" name="Password" placeholder="Mật khẩu"
-                   class="w-full bg-black border border-gray-700 rounded-xl p-4 outline-none focus:border-yellow-400 text-white" />
-            <input type="password" name="ConfirmPassword" placeholder="Nhập lại mật khẩu"
-                   class="w-full bg-black border border-gray-700 rounded-xl p-4 outline-none focus:border-yellow-400 text-white" />
-            <button type="submit"
-                    class="w-full bg-green-500 text-white font-bold py-4 rounded-xl hover:bg-green-400 transition shadow-lg shadow-green-500/20">
-                ĐĂNG KÝ TÀI KHOẢN
-            </button>
-            <p class="text-center text-sm text-gray-500">
-                Đã có tài khoản? <a asp-action="Login" class="text-yellow-400 hover:underline">Đăng nhập</a>
+        <form asp-action="Register" method="post" class="space-y-4 relative z-10">
+            <div>
+                <label class="text-[#ffd700] text-[10px] font-black uppercase mb-1 block ml-1">Tài khoản</label>
+                <div class="relative">
+                    <i class="fa-solid fa-user absolute left-4 top-1/2 -translate-y-1/2 text-[#d4af37]"></i>
+                    <input type="text" name="Username" value="@Model?.Username" placeholder="Nhập tên đăng nhập mới"
+                           class="w-full bg-[#1a0a0a] border border-[#d4af37]/50 rounded-lg p-3.5 pl-10 outline-none focus:border-[#ffd700] focus:shadow-[0_0_10px_rgba(212,175,55,0.2)] text-white font-bold transition" />
+                </div>
+            </div>
+            
+            <div>
+                <label class="text-[#ffd700] text-[10px] font-black uppercase mb-1 block ml-1">Mật khẩu</label>
+                <div class="relative">
+                    <i class="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-[#d4af37]"></i>
+                    <input type="password" name="Password" placeholder="Nhập mật khẩu"
+                           class="w-full bg-[#1a0a0a] border border-[#d4af37]/50 rounded-lg p-3.5 pl-10 outline-none focus:border-[#ffd700] focus:shadow-[0_0_10px_rgba(212,175,55,0.2)] text-white font-bold transition" />
+                </div>
+            </div>
+
+            <div>
+                <label class="text-[#ffd700] text-[10px] font-black uppercase mb-1 block ml-1">Xác nhận mật khẩu</label>
+                <div class="relative">
+                    <i class="fa-solid fa-check-double absolute left-4 top-1/2 -translate-y-1/2 text-[#d4af37]"></i>
+                    <input type="password" name="ConfirmPassword" placeholder="Nhập lại mật khẩu"
+                           class="w-full bg-[#1a0a0a] border border-[#d4af37]/50 rounded-lg p-3.5 pl-10 outline-none focus:border-[#ffd700] focus:shadow-[0_0_10px_rgba(212,175,55,0.2)] text-white font-bold transition" />
+                </div>
+            </div>
+
+            <div class="pt-2">
+                <button type="submit"
+                        class="w-full bg-gradient-to-b from-[#ffd700] to-[#b8860b] text-black font-black text-lg py-3 rounded-lg shadow-[0_0_15px_rgba(212,175,55,0.4)] hover:scale-[1.02] transition uppercase tracking-widest">
+                    Đăng Ký Ngay
+                </button>
+            </div>
+            
+            <p class="text-center text-xs text-gray-400 font-bold pt-2 border-t border-white/5">
+                Đã có tài khoản? <a asp-action="Login" class="text-[#ffd700] hover:text-white transition uppercase">Đăng nhập</a>
             </p>
         </form>
     </div>

@@ -84,6 +84,8 @@ namespace BET366.Services
                 {
                     if (state.XocDia.Phase == "betting")
                     {
+                        state.XocDia.Phase = "rolling";
+                        state.XocDia.TimeLeft = 10;
                         var coins = _engine.RollXocDia();
                         await ProcessXocDiaResult(coins, ct);
                     }
@@ -104,6 +106,8 @@ namespace BET366.Services
                 {
                     if (state.BauCua.Phase == "betting")
                     {
+                        state.BauCua.Phase = "rolling";
+                        state.BauCua.TimeLeft = 10;
                         var result = _engine.RollBauCua();
                         await ProcessBauCuaResult(result, ct);
                     }

@@ -114,9 +114,9 @@ namespace BET366.Controllers
         public async Task<IActionResult> GetDetailedHistory()
         {
             var sessions = await _db.GameSessions
-                .Where(s => s.Phase == "rolling" && s.Total != null)
+                .Where(s => s.Total != null)
                 .OrderByDescending(s => s.CreatedAt)
-                .Take(20)
+                .Take(60)
                 .Select(s => new
                 {
                     s.SessionCode,

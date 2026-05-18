@@ -1,220 +1,378 @@
 @model BET366.Services.GameState
-@{ 
-    Layout = "_AdminLayout"; 
-    ViewData["Title"] = "Điều khiển kết quả Game"; 
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Điều khiển kết quả Game";
 }
 
-<h1 class="text-2xl font-black mb-8">🎯 Điều khiển kết quả Game (Trực tiếp)</h1>
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+    <h1 class="text-2xl font-black">🎯 Điều khiển kết quả Game (Trực tiếp)</h1>
+    <a href="/Admin/Config" class="px-6 py-2 bg-zinc-800 border border-[#d4af37]/30 rounded-xl text-[#d4af37] font-bold text-sm hover:bg-[#d4af37] hover:text-black transition-all">
+        <i class="fa-solid fa-gear mr-2"></i>Cài đặt hệ thống
+    </a>
+</div>
+
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+    <div class="admin-card p-4 text-center border-[#d4af37]/40">
+        <div class="text-zinc-500 text-[10px] uppercase font-bold mb-1">Người chơi Online</div>
+        <div id="admin-online-count" class="text-2xl font-black text-green-400">0</div>
+    </div>
+    <div class="admin-card p-4 text-center border-[#d4af37]/40">
+        <div class="text-zinc-500 text-[10px] uppercase font-bold mb-1">Tổng cược (Xỉu / Tài)</div>
+        <div class="text-lg font-black"><span id="admin-total-xiu" class="text-blue-400">0</span> / <span id="admin-total-tai" class="text-red-500">0</span></div>
+    </div>
+</div>
 
 <!-- Thanh điều hướng Tab -->
-<div class="flex gap-2 mb-6 p-1 bg-zinc-900 rounded-2xl w-fit border border-white/5">
-    <button onclick="showTab('taixiu')" id="nav-taixiu" class="admin-tab-btn active">🎲 Tài Xỉu</button>
-    <button onclick="showTab('xocdia')" id="nav-xocdia" class="admin-tab-btn">🪙 Xóc Đĩa</button>
-    <button onclick="showTab('baucua')" id="nav-baucua" class="admin-tab-btn">🦀 Bầu Cua</button>
+<div class="flex gap-1 mb-6 p-1 bg-[#1a0a0a] rounded-2xl w-full sm:w-fit border border-[#d4af37]/30 overflow-x-auto no-scrollbar shadow-[0_0_15px_rgba(212,175,55,0.1)]">
+    <button onclick="showTab('taixiu')" id="nav-taixiu" class="admin-tab-btn active flex-1 sm:flex-none">🎲 Tài Xỉu</button>
+    <button onclick="showTab('xocdia')" id="nav-xocdia" class="admin-tab-btn flex-1 sm:flex-none">🪙 Xóc Đĩa</button>
+    <button onclick="showTab('baucua')" id="nav-baucua" class="admin-tab-btn flex-1 sm:flex-none">🦀 Bầu Cua</button>
 </div>
 
-<div class="max-w-4xl">
-    <!-- Tài Xỉu Control -->
-    <div id="tab-taixiu" class="game-tab-content">
-        <div class="admin-card p-10 text-center">
-            <h3 class="text-xl font-black text-yellow-500 mb-8 italic uppercase tracking-widest">ĐIỀU KHIỂN TÀI XỈU</h3>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6" id="taixiu-controls">
-                <button id="btn-taixiu-xiu" onclick="setOverride('taixiu', 'xiu')" class="group relative overflow-hidden py-12 bg-blue-600 hover:bg-blue-700 rounded-3xl font-black text-5xl shadow-2xl transition-all">
-                    <span class="relative z-10">XỈU</span>
-                    <div class="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                </button>
-                <button id="btn-taixiu-tai" onclick="setOverride('taixiu', 'tai')" class="group relative overflow-hidden py-12 bg-red-600 hover:bg-red-700 rounded-3xl font-black text-5xl shadow-2xl transition-all">
-                    <span class="relative z-10">TÀI</span>
-                    <div class="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                </button>
-                <button id="btn-taixiu-random" onclick="setOverride('taixiu', 'random')" class="py-12 bg-zinc-800 hover:bg-zinc-700 rounded-3xl font-bold text-xl transition-all uppercase">Ngẫu nhiên</button>
+    <div class="max-w-4xl">
+        <!-- Tài Xỉu Control -->
+        <div id="tab-taixiu" class="game-tab-content">
+            <div class="admin-card p-6 sm:p-10 text-center">
+                <h3 class="text-xl font-black text-[#ffd700] mb-8 italic uppercase tracking-widest drop-shadow-md">ĐIỀU KHIỂN TÀI XỈU</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-6" id="taixiu-controls">
+                    <button id="btn-taixiu-xiu" onclick="setOverride('taixiu', 'xiu')"
+                            class="group relative overflow-hidden py-8 sm:py-12 bg-black border-2 border-[#1a1a1a] hover:border-gray-500 rounded-3xl font-black text-4xl sm:text-5xl shadow-[0_0_20px_rgba(0,0,0,0.8)] transition-all">
+                        <span class="relative z-10 text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">XỈU</span>
+                    </button>
+                    <button id="btn-taixiu-tai" onclick="setOverride('taixiu', 'tai')"
+                            class="group relative overflow-hidden py-8 sm:py-12 bg-[#8b0000] border-2 border-[#ff3131] hover:border-[#ff6b6b] rounded-3xl font-black text-4xl sm:text-5xl shadow-[0_0_20px_rgba(255,49,49,0.3)] transition-all">
+                        <span class="relative z-10 text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">TÀI</span>
+                    </button>
+                    <button id="btn-taixiu-random" onclick="setOverride('taixiu', 'random')"
+                            class="py-8 sm:py-12 bg-[#2a1010] border border-[#d4af37]/30 hover:bg-[#3a1a1a] rounded-3xl font-bold text-lg sm:text-xl text-[#d4af37] transition-all uppercase">Ngẫu nhiên</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Xóc Đĩa Control -->
+        <div id="tab-xocdia" class="game-tab-content hidden">
+            <div class="admin-card p-6 sm:p-10 text-center">
+                <h3 class="text-xl font-black text-[#ffd700] mb-8 italic uppercase tracking-widest drop-shadow-md">ĐIỀU KHIỂN XÓC ĐĨA</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-6" id="xocdia-controls">
+                    <button id="btn-xocdia-chan" onclick="setOverride('xocdia', 'chan')"
+                            class="group relative overflow-hidden py-8 sm:py-12 bg-white text-black hover:bg-zinc-200 border-2 border-white rounded-3xl font-black text-4xl sm:text-5xl shadow-[0_0_20px_rgba(255,255,255,0.3)] transition-all">
+                        <span class="relative z-10">CHẴN</span>
+                    </button>
+                    <button id="btn-xocdia-le" onclick="setOverride('xocdia', 'le')"
+                            class="group relative overflow-hidden py-8 sm:py-12 bg-[#8b0000] border-2 border-[#ff3131] hover:border-[#ff6b6b] text-white rounded-3xl font-black text-4xl sm:text-5xl shadow-[0_0_20px_rgba(255,49,49,0.3)] transition-all">
+                        <span class="relative z-10">LẺ</span>
+                    </button>
+                    <button id="btn-xocdia-random" onclick="setOverride('xocdia', 'random')"
+                            class="py-8 sm:py-12 bg-[#2a1010] border border-[#d4af37]/30 hover:bg-[#3a1a1a] rounded-3xl font-bold text-lg sm:text-xl text-[#d4af37] transition-all uppercase">Ngẫu nhiên</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bầu Cua Control -->
+        <div id="tab-baucua" class="game-tab-content hidden">
+            <div class="admin-card p-6 sm:p-10">
+                <h3 class="text-xl font-black text-[#ffd700] mb-8 italic uppercase tracking-widest text-center drop-shadow-md">ĐIỀU KHIỂN BẦU CUA</h3>
+                <div class="grid grid-cols-3 sm:grid-cols-6 gap-4 mb-10" id="bauCuaSelectControls">
+                    <button onclick="toggleBauCua('nai')" id="bc-nai" class="p-4 sm:p-8 bg-[#1a0a0a] border border-[#d4af37]/30 rounded-2xl sm:rounded-[2rem] text-3xl sm:text-5xl hover:bg-[#2a1010] transition-all shadow-xl">🦌</button>
+                    <button onclick="toggleBauCua('bau')" id="bc-bau" class="p-4 sm:p-8 bg-[#1a0a0a] border border-[#d4af37]/30 rounded-2xl sm:rounded-[2rem] text-3xl sm:text-5xl hover:bg-[#2a1010] transition-all shadow-xl">🎃</button>
+                    <button onclick="toggleBauCua('ga')" id="bc-ga" class="p-4 sm:p-8 bg-[#1a0a0a] border border-[#d4af37]/30 rounded-2xl sm:rounded-[2rem] text-3xl sm:text-5xl hover:bg-[#2a1010] transition-all shadow-xl">🐓</button>
+                    <button onclick="toggleBauCua('ca')" id="bc-ca" class="p-4 sm:p-8 bg-[#1a0a0a] border border-[#d4af37]/30 rounded-2xl sm:rounded-[2rem] text-3xl sm:text-5xl hover:bg-[#2a1010] transition-all shadow-xl">🐟</button>
+                    <button onclick="toggleBauCua('cua')" id="bc-cua" class="p-4 sm:p-8 bg-[#1a0a0a] border border-[#d4af37]/30 rounded-2xl sm:rounded-[2rem] text-3xl sm:text-5xl hover:bg-[#2a1010] transition-all shadow-xl">🦀</button>
+                    <button onclick="toggleBauCua('tom')" id="bc-tom" class="p-4 sm:p-8 bg-[#1a0a0a] border border-[#d4af37]/30 rounded-2xl sm:rounded-[2rem] text-3xl sm:text-5xl hover:bg-[#2a1010] transition-all shadow-xl">🦐</button>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <button id="btn-baucua-submit" onclick="submitBauCua()"
+                            class="flex-1 py-6 bg-gradient-to-b from-[#ffd700] to-[#b8860b] text-black hover:scale-[1.02] rounded-2xl font-black text-xl shadow-[0_0_15px_rgba(212,175,55,0.4)] transition-all uppercase tracking-widest">
+                        Xác nhận ép bầu cua
+                    </button>
+                    <button id="btn-baucua-random" onclick="setOverride('baucua', 'random')"
+                            class="px-10 py-6 bg-[#2a1010] border border-[#d4af37]/30 text-[#d4af37] hover:bg-[#3a1a1a] rounded-2xl font-bold transition-all uppercase">
+                        Hủy ép
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Xóc Đĩa Control -->
-    <div id="tab-xocdia" class="game-tab-content hidden">
-        <div class="admin-card p-10 text-center">
-            <h3 class="text-xl font-black text-white mb-8 italic uppercase tracking-widest">ĐIỀU KHIỂN XÓC ĐĨA</h3>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6" id="xocdia-controls">
-                <button id="btn-xocdia-chan" onclick="setOverride('xocdia', 'chan')" class="group relative overflow-hidden py-12 bg-white text-black hover:bg-zinc-200 rounded-3xl font-black text-5xl shadow-2xl transition-all">
-                    <span class="relative z-10">CHẴN</span>
-                </button>
-                <button id="btn-xocdia-le" onclick="setOverride('xocdia', 'le')" class="group relative overflow-hidden py-12 bg-red-600 hover:bg-red-700 rounded-3xl font-black text-5xl shadow-2xl transition-all">
-                    <span class="relative z-10">LẺ</span>
-                </button>
-                <button id="btn-xocdia-random" onclick="setOverride('xocdia', 'random')" class="py-12 bg-zinc-800 hover:bg-zinc-700 rounded-3xl font-bold text-xl transition-all uppercase">Ngẫu nhiên</button>
-            </div>
-        </div>
-    </div>
+                        @section Scripts {
+                            <style>
+                                /* Tối ưu hóa phản hồi chạm và ngăn chặn sticky hover trên mobile */
+                                button,
+                                .admin-tab-btn {
+                                    -webkit-tap-highlight-color: transparent;
+                                    user-select: none;
+                                    touch-action: manipulation;
+                                    cursor: pointer;
+                                }
 
-    <!-- Bầu Cua Control -->
-    <div id="tab-baucua" class="game-tab-content hidden">
-        <div class="admin-card p-10">
-            <h3 class="text-xl font-black text-emerald-500 mb-8 italic uppercase tracking-widest text-center">ĐIỀU KHIỂN BẦU CUA</h3>
-            <div class="grid grid-cols-3 sm:grid-cols-6 gap-4 mb-10" id="bauCuaSelectControls">
-                <button onclick="toggleBauCua('nai')" id="bc-nai" class="p-8 bg-zinc-800 rounded-[2rem] text-5xl hover:bg-zinc-700 transition-all shadow-xl">🦌</button>
-                <button onclick="toggleBauCua('bau')" id="bc-bau" class="p-8 bg-zinc-800 rounded-[2rem] text-5xl hover:bg-zinc-700 transition-all shadow-xl">🎃</button>
-                <button onclick="toggleBauCua('ga')" id="bc-ga" class="p-8 bg-zinc-800 rounded-[2rem] text-5xl hover:bg-zinc-700 transition-all shadow-xl">🐓</button>
-                <button onclick="toggleBauCua('ca')" id="bc-ca" class="p-8 bg-zinc-800 rounded-[2rem] text-5xl hover:bg-zinc-700 transition-all shadow-xl">🐟</button>
-                <button onclick="toggleBauCua('cua')" id="bc-cua" class="p-8 bg-zinc-800 rounded-[2rem] text-5xl hover:bg-zinc-700 transition-all shadow-xl">🦀</button>
-                <button onclick="toggleBauCua('tom')" id="bc-tom" class="p-8 bg-zinc-800 rounded-[2rem] text-5xl hover:bg-zinc-700 transition-all shadow-xl">🦐</button>
-            </div>
-            <div class="flex flex-col sm:flex-row gap-4">
-                <button id="btn-baucua-submit" onclick="submitBauCua()" class="flex-1 py-6 bg-emerald-600 hover:bg-emerald-700 rounded-2xl font-black text-xl shadow-xl transition-all uppercase tracking-widest">Xác nhận ép bầu cua</button>
-                <button id="btn-baucua-random" onclick="setOverride('baucua', 'random')" class="px-10 py-6 bg-zinc-800 hover:bg-zinc-700 rounded-2xl font-bold transition-all uppercase">Hủy ép</button>
-            </div>
-        </div>
-    </div>
-</div>
+                                /* Hiệu ứng Card chuẩn Casino */
+                                .admin-card {
+                                    background: linear-gradient(135deg, rgba(42, 4, 4, 0.95), rgba(10, 0, 0, 0.95));
+                                    backdrop-filter: blur(12px);
+                                    border: 2px solid rgba(212, 175, 55, 0.3);
+                                    border-radius: 2rem;
+                                    box-shadow:
+                                        0 25px 50px -12px rgba(0, 0, 0, 0.8),
+                                        0 0 30px rgba(212, 175, 55, 0.1);
+                                    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+                                }
 
-@section Scripts {
-    <style>
-        .admin-tab-btn {
-            padding: 1rem 2.5rem;
-            font-weight: 900;
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            border-radius: 1.25rem;
-            color: #71717a; /* zinc-500 */
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .admin-tab-btn.active {
-            background-color: #facc15; /* yellow-400 */
-            color: #000;
-            box-shadow: 0 10px 20px rgba(250, 204, 21, 0.2);
-        }
-        .game-tab-content.hidden { display: none; }
-        .override-active {
-            border: 3px solid #facc15; /* yellow-400 */
-            box-shadow: 0 0 15px rgba(250, 204, 21, 0.5);
-            transform: scale(1.02);
-        }
-    </style>
+                                /* Chỉ áp dụng hiệu ứng hover cho thiết bị dùng chuột (tránh lỗi sticky hover trên mobile) */
+                                @@media (hover: hover) {
+                                    .admin-card:hover {
+                                        border-color: rgba(250, 204, 21, 0.3);
+                                        box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.6);
+                                    }
+                                }
 
-    <script>
-        const adminConn = new signalR.HubConnectionBuilder().withUrl("/gameHub").build();
-        adminConn.start().then(() => adminConn.invoke("JoinAdmin"));
+                                .admin-tab-btn {
+                                    padding: 0.75rem 1rem;
+                                    font-weight: 900;
+                                    font-size: 0.7rem;
+                                    text-transform: uppercase;
+                                    border-radius: 1.25rem;
+                                    color: #71717a;
+                                    /* zinc-500 */
+                                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                                    white-space: nowrap;
+                                }
 
-        const modelState = @Html.Raw(Json.Serialize(Model)); // Lấy trạng thái từ Model
+                                @@media (min-width: 640px) {
+                                    .admin-tab-btn {
+                                        padding: 1rem 2.5rem;
+                                        font-size: 0.8rem;
+                                    }
+                                }
 
-        function clearAllOverrides() {
-            document.querySelectorAll('.game-tab-content button').forEach(btn => {
-                btn.classList.remove('override-active');
-                // Reset Bầu Cua specific classes
-                if (btn.id.startsWith('bc-')) {
-                    btn.classList.remove('bg-emerald-500', 'ring-4', 'ring-emerald-500/20');
-                    btn.classList.add('bg-zinc-800');
-                }
-            });
-            selectedBC = []; // Clear Bầu Cua selection
-        }
+                                .no-scrollbar::-webkit-scrollbar {
+                                    display: none;
+                                }
 
-        function showTab(tab) {
-            // Ẩn tất cả tab
-            document.querySelectorAll('.game-tab-content').forEach(el => el.classList.add('hidden'));
-            document.querySelectorAll('.admin-tab-btn').forEach(el => el.classList.remove('active'));
-            
-            // Hiện tab được chọn
-            document.getElementById('tab-' + tab).classList.remove('hidden');
-            document.getElementById('nav-' + tab).classList.add('active');
+                                .no-scrollbar {
+                                    -ms-overflow-style: none;
+                                    scrollbar-width: none;
+                                }
 
-            // Xóa highlight của các tab khác và thiết lập lại cho tab hiện tại
-            clearAllOverrides();
-            initializeOverrides();
-        }
+                                .admin-tab-btn.active {
+                                    background-color: #d4af37;
+                                    background-image: linear-gradient(to bottom right, #ffd700, #b8860b);
+                                    color: #000;
+                                    box-shadow:
+                                        0 10px 20px -5px rgba(212, 175, 55, 0.4),
+                                        inset 0 2px 4px rgba(255, 255, 255, 0.3);
+                                    transform: translateY(-2px) scale(1.02);
+                                }
 
-        function initializeOverrides() {
-            // Tài Xỉu
-            if (modelState.resultOverride === 'left') {
-                document.getElementById('btn-taixiu-xiu')?.classList.add('override-active');
-            } else if (modelState.resultOverride === 'right') {
-                document.getElementById('btn-taixiu-tai')?.classList.add('override-active');
-            } else {
-                document.getElementById('btn-taixiu-random')?.classList.add('override-active');
-            }
+                                .admin-tab-btn:active {
+                                    transform: translateY(0) scale(0.95);
+                                    filter: brightness(0.9);
+                                }
 
-            // Xóc Đĩa
-            if (modelState.xocDiaOverride === 'chan') {
-                document.getElementById('btn-xocdia-chan')?.classList.add('override-active');
-            } else if (modelState.xocDiaOverride === 'le') {
-                document.getElementById('btn-xocdia-le')?.classList.add('override-active');
-            } else {
-                document.getElementById('btn-xocdia-random')?.classList.add('override-active');
-            }
+                                .game-tab-content.hidden {
+                                    display: none;
+                                }
 
-            // Bầu Cua
-            if (modelState.bauCuaOverride !== 'random' && modelState.bauCuaOverride !== null) {
-                selectedBC = modelState.bauCuaOverride.split(',');
-                selectedBC.forEach(choice => {
-                    const btn = document.getElementById('bc-' + choice);
-                    if (btn) {
-                        btn.classList.remove('bg-zinc-800');
-                        btn.classList.add('bg-emerald-500', 'ring-4', 'ring-emerald-500/20');
-                    }
-                });
-            } else {
-                document.getElementById('btn-baucua-random')?.classList.add('override-active');
-            }
-        }
+                                .override-active {
+                                    border: 3px solid #ffd700 !important;
+                                    box-shadow:
+                                        0 0 20px rgba(212, 175, 55, 0.4),
+                                        0 0 40px rgba(212, 175, 55, 0.2) !important;
+                                    transform: scale(1.05) !important;
+                                    z-index: 20;
+                                }
 
-        function setOverride(game, mode) {
-            clearAllOverrides(); // Xóa tất cả highlight trước khi đặt cái mới
+                                /* Phản hồi nhấn (Active state) cho các nút game */
+                                #taixiu-controls button:active,
+                                #xocdia-controls button:active,
+                                #bauCuaSelectControls button:active {
+                                    transform: scale(0.95);
+                                    filter: brightness(0.85);
+                                }
 
-            if (game === 'taixiu') {
-                adminConn.invoke("SetTaiXiuOverride", mode === 'xiu' ? 'left' : (mode === 'tai' ? 'right' : 'random'));
-                document.getElementById(`btn-taixiu-${mode}`)?.classList.add('override-active');
-            } else if (game === 'xocdia') {
-                adminConn.invoke("SetXocDiaOverride", mode);
-                document.getElementById(`btn-xocdia-${mode}`)?.classList.add('override-active');
-            } else if (game === 'baucua') {
-                adminConn.invoke("SetBauCuaOverride", mode);
-                if (mode === 'random') {
-                    document.getElementById('btn-baucua-random')?.classList.add('override-active');
-                    selectedBC = []; // Clear Bầu Cua selection
-                    document.querySelectorAll('#bauCuaSelectControls button').forEach(b => {
-                        b.classList.remove('bg-emerald-500', 'ring-4', 'ring-emerald-500/20');
-                        b.classList.add('bg-zinc-800');
-                    });
-                }
-            }
-            alert("Đã thiết lập ép kết quả " + mode.toUpperCase());
-        }
+                                /* Hiệu ứng LED chạy viền khi chờ kết quả */
+                                .led-waiting {
+                                    position: relative;
+                                    border: 2px solid transparent !important;
+                                    background-image: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)),
+                                        linear-gradient(90deg, #facc15, #eab308, #fbbf24, #facc15);
+                                    background-origin: border-box;
+                                    background-clip: padding-box, border-box;
+                                    background-size: 100% 100%, 200% 100%;
+                                    animation: led-rotate 1.2s linear infinite;
+                                    box-shadow: 0 0 15px rgba(250, 204, 21, 0.3);
+                                }
 
-        let selectedBC = [];
-        function toggleBauCua(id) {
-            const btn = document.getElementById('bc-' + id);
-            clearAllOverrides(); // Xóa tất cả highlight trước khi chọn Bầu Cua
-            if (selectedBC.includes(id)) {
-                selectedBC = selectedBC.filter(x => x !== id);
-                btn.classList.remove('bg-emerald-500', 'ring-4', 'ring-emerald-500/20');
-                btn.classList.add('bg-zinc-800');
-            } else if (selectedBC.length < 3) {
-                selectedBC.push(id);
-                btn.classList.remove('bg-zinc-800');
-                btn.classList.add('bg-emerald-500', 'ring-4', 'ring-emerald-500/20');
-            }
-            // Nếu đã chọn đủ 3 con, highlight nút xác nhận
-            if (selectedBC.length === 3) {
-                document.getElementById('btn-baucua-submit')?.classList.add('override-active');
-            } else {
-                document.getElementById('btn-baucua-submit')?.classList.remove('override-active');
-            }
-        }
+                                @@keyframes led-rotate {
+                                    0% {
+                                        background-position: 0% 0%, 0% 50%;
+                                    }
 
-        function submitBauCua() {
-            if (selectedBC.length !== 3) { alert("Phải chọn đủ 3 linh vật!"); return; }
-            setOverride('baucua', selectedBC.join(','));
-            selectedBC = [];
-            document.querySelectorAll('#bauCuaSelectControls button').forEach(b => {
-                b.classList.remove('bg-emerald-500', 'ring-4', 'ring-emerald-500/20');
-                b.classList.add('bg-zinc-800');
-            });
-        }
+                                    100% {
+                                        background-position: 0% 0%, 200% 50%;
+                                    }
+                                }
 
-        // Khởi tạo trạng thái khi tải trang
-        document.addEventListener('DOMContentLoaded', () => {
-            showTab('taixiu'); // Mở tab Tài Xỉu mặc định
-        });
-    </script>
-}
+                                /* Hiệu ứng rung lắc bàn chơi (Vibration) */
+                                .table-shake {
+                                    will-change: transform;
+                                    animation: tableVibrate 0.1s linear infinite;
+                                }
+
+                                @@keyframes tableVibrate {
+                                    0% {
+                                        transform: translate(0, 0);
+                                    }
+
+                                    25% {
+                                        transform: translate(1px, 1px);
+                                    }
+
+                                    50% {
+                                        transform: translate(-1px, -1px);
+                                    }
+
+                                    75% {
+                                        transform: translate(1px, -1px);
+                                    }
+
+                                    100% {
+                                        transform: translate(0, 0);
+                                    }
+                                }
+                            </style>
+
+                            <script>
+                                const adminConn = new signalR.HubConnectionBuilder().withUrl("/gameHub").build();
+                                adminConn.start().then(() => adminConn.invoke("JoinAdmin"));
+
+                                adminConn.on("OnlineCountUpdate", (count) => {
+                                    document.getElementById('admin-online-count').textContent = count;
+                                });
+
+                                adminConn.on("TotalBetsUpdate", (data) => {
+                                    document.getElementById('admin-total-xiu').textContent = data.leftTotal.toLocaleString();
+                                    document.getElementById('admin-total-tai').textContent = data.rightTotal.toLocaleString();
+                                });
+
+                                const modelState = @Html.Raw(Json.Serialize(Model)); // Lấy trạng thái từ Model
+
+                                function clearAllOverrides() {
+                                    document.querySelectorAll('.game-tab-content button').forEach(btn => {
+                                        btn.classList.remove('override-active');
+                                        // Reset Bầu Cua specific classes
+                                        if (btn.id.startsWith('bc-')) {
+                                            btn.classList.remove('bg-gradient-to-b', 'from-[#ffd700]', 'to-[#b8860b]', 'text-black');
+                                            btn.classList.add('bg-[#1a0a0a]');
+                                        }
+                                    });
+                                    selectedBC = []; // Clear Bầu Cua selection
+                                }
+
+                                function showTab(tab) {
+                                    // Ẩn tất cả tab
+                                    document.querySelectorAll('.game-tab-content').forEach(el => el.classList.add('hidden'));
+                                    document.querySelectorAll('.admin-tab-btn').forEach(el => el.classList.remove('active'));
+
+                                    // Hiện tab được chọn
+                                    document.getElementById('tab-' + tab).classList.remove('hidden');
+                                    document.getElementById('nav-' + tab).classList.add('active');
+
+                                    // Xóa highlight của các tab khác và thiết lập lại cho tab hiện tại
+                                    clearAllOverrides();
+                                    initializeOverrides();
+                                }
+
+                                function initializeOverrides() {
+                                    // Tài Xỉu
+                                    if (modelState.resultOverride === 'left') {
+                                        document.getElementById('btn-taixiu-xiu')?.classList.add('override-active');
+                                    } else if (modelState.resultOverride === 'right') {
+                                        document.getElementById('btn-taixiu-tai')?.classList.add('override-active');
+                                    } else {
+                                        document.getElementById('btn-taixiu-random')?.classList.add('override-active');
+                                    }
+
+                                    // Xóc Đĩa
+                                    if (modelState.xocDiaOverride === 'chan') {
+                                        document.getElementById('btn-xocdia-chan')?.classList.add('override-active');
+                                    } else if (modelState.xocDiaOverride === 'le') {
+                                        document.getElementById('btn-xocdia-le')?.classList.add('override-active');
+                                    } else {
+                                        document.getElementById('btn-xocdia-random')?.classList.add('override-active');
+                                    }
+
+                                    // Bầu Cua
+                                    if (modelState.bauCuaOverride !== 'random' && modelState.bauCuaOverride !== null) {
+                                        selectedBC = modelState.bauCuaOverride.split(',');
+                                        selectedBC.forEach(choice => {
+                                            const btn = document.getElementById('bc-' + choice);
+                                            if (btn) {
+                                                btn.classList.remove('bg-[#1a0a0a]');
+                                                btn.classList.add('bg-gradient-to-b', 'from-[#ffd700]', 'to-[#b8860b]', 'text-black');
+                                            }
+                                        });
+                                    } else {
+                                        document.getElementById('btn-baucua-random')?.classList.add('override-active');
+                                    }
+                                }
+
+                                function setOverride(game, mode) {
+                                    clearAllOverrides(); // Xóa tất cả highlight trước khi đặt cái mới
+
+                                    if (game === 'taixiu') {
+                                        adminConn.invoke("SetTaiXiuOverride", mode === 'xiu' ? 'left' : (mode === 'tai' ? 'right' : 'random'));
+                                        document.getElementById(`btn-taixiu-${mode}`)?.classList.add('override-active');
+                                    } else if (game === 'xocdia') {
+                                        adminConn.invoke("SetXocDiaOverride", mode);
+                                        document.getElementById(`btn-xocdia-${mode}`)?.classList.add('override-active');
+                                    } else if (game === 'baucua') {
+                                        adminConn.invoke("SetBauCuaOverride", mode);
+                                        if (mode === 'random') {
+                                            document.getElementById('btn-baucua-random')?.classList.add('override-active');
+                                            selectedBC = []; // Clear Bầu Cua selection
+                                            document.querySelectorAll('#bauCuaSelectControls button').forEach(b => {
+                                                b.classList.remove('bg-gradient-to-b', 'from-[#ffd700]', 'to-[#b8860b]', 'text-black');
+                                                b.classList.add('bg-[#1a0a0a]');
+                                            });
+                                        }
+                                    }
+                                    alert("Đã thiết lập ép kết quả " + mode.toUpperCase());
+                                }
+
+                                let selectedBC = [];
+                                function toggleBauCua(id) {
+                                    const btn = document.getElementById('bc-' + id);
+                                    clearAllOverrides(); // Xóa tất cả highlight trước khi chọn Bầu Cua
+                                    if (selectedBC.includes(id)) {
+                                        selectedBC = selectedBC.filter(x => x !== id);
+                                        btn.classList.remove('bg-gradient-to-b', 'from-[#ffd700]', 'to-[#b8860b]', 'text-black');
+                                        btn.classList.add('bg-[#1a0a0a]');
+                                    } else if (selectedBC.length < 3) {
+                                        selectedBC.push(id);
+                                        btn.classList.remove('bg-[#1a0a0a]');
+                                        btn.classList.add('bg-gradient-to-b', 'from-[#ffd700]', 'to-[#b8860b]', 'text-black');
+                                    }
+                                    // Nếu đã chọn đủ 3 con, highlight nút xác nhận
+                                    if (selectedBC.length === 3) {
+                                        document.getElementById('btn-baucua-submit')?.classList.add('override-active');
+                                    } else {
+                                        document.getElementById('btn-baucua-submit')?.classList.remove('override-active');
+                                    }
+                                }
+
+                                function submitBauCua() {
+                                    if (selectedBC.length !== 3) { alert("Phải chọn đủ 3 linh vật!"); return; }
+                                    setOverride('baucua', selectedBC.join(','));
+                                    selectedBC = [];
+                                    document.querySelectorAll('#bauCuaSelectControls button').forEach(b => {
+                                        b.classList.remove('bg-gradient-to-b', 'from-[#ffd700]', 'to-[#b8860b]', 'text-black');
+                                        b.classList.add('bg-[#1a0a0a]');
+                                    });
+                                }
+
+                                // Khởi tạo trạng thái khi tải trang
+                                document.addEventListener('DOMContentLoaded', () => {
+                                    showTab('taixiu'); // Mở tab Tài Xỉu mặc định
+                                });
+                            </script>
+                        }

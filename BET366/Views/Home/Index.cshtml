@@ -1,235 +1,454 @@
 @{ ViewData["Title"] = "BET366 - Luxury Casino"; }
 
-<div id="lobbyContainer" class="flex flex-col h-full overflow-hidden bg-[#0A0A0B]">
-    <!-- Premium Header -->
-    <header class="info-bar sticky top-0 z-50 px-4 py-3 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-            <div class="avatar-ring haptic-btn" onclick="openModal('profileModal')">
-                <div class="avatar-inner">
-                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=@User.Identity?.Name" alt="Avatar" />
-                </div>
+<style>
+    /* HỆ THỐNG GIAO DIỆN 3D SIÊU THỰC */
+    .casino-surface {
+        background: radial-gradient(circle at center, #1a472a 0%, #0d2b1a 100%);
+        border: 8px solid #3d2b1f;
+        box-shadow: inset 0 0 50px rgba(0,0,0,0.5), 0 20px 40px rgba(0,0,0,0.8);
+        border-radius: 50%;
+        position: relative;
+    }
+    .plate-container::after {
+        content: '';
+        position: absolute;
+        inset: -2px;
+        border-radius: 50%;
+        background: linear-gradient(145deg, #d4af37, #b8860b);
+        z-index: -1;
+    }
+    .bowl {
+        background: radial-gradient(circle at 30% 30%, #555, #111);
+        box-shadow: inset -10px -10px 20px rgba(0,0,0,0.5), 10px 20px 30px rgba(0,0,0,0.5);
+        cursor: grab;
+        transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .bowl:active { cursor: grabbing; }
+    
+    /* Nâng cấp Xúc xắc 3D */
+    .dice-wrapper { perspective: 400px; width: 44px; height: 44px; }
+    .cube { 
+        width: 40px; height: 40px; position: relative; transform-style: preserve-3d; 
+        transition: transform 3s cubic-bezier(0.2, 0.8, 0.3, 1.1);
+    }
+    .face {
+        position: absolute; width: 40px; height: 40px;
+        border: 1px solid rgba(0,0,0,0.1);
+        background: radial-gradient(circle at 30% 30%, #fff 0%, #e5e5e5 100%);
+        box-shadow: inset 0 0 8px rgba(0,0,0,0.2), 0 0 2px rgba(0,0,0,0.1);
+        border-radius: 6px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        grid-template-rows: repeat(3, 1fr);
+        padding: 5px;
+        backface-visibility: hidden;
+        user-select: none;
+    }
+    .dot { width: 6px; height: 6px; background: #1a1a1a; border-radius: 50%; box-shadow: inset 0 1px 1px rgba(0,0,0,0.5); align-self: center; justify-self: center; }
+    .face-1 .dot { background: #e31b23; width: 14px; height: 14px; grid-area: 2/2; } /* Nút Nhất lớn màu đỏ */
+    
+    /* Định vị các mặt 3D chuẩn xác */
+    .face-1 { transform: translateZ(20px); }
+    .face-2 { transform: rotateY(90deg) translateZ(20px); }
+    .face-3 { transform: rotateX(-90deg) translateZ(20px); }
+    .face-4 { transform: rotateX(90deg) translateZ(20px); }
+    .face-5 { transform: rotateY(-90deg) translateZ(20px); }
+    .face-6 { transform: rotateY(180deg) translateZ(20px); }
+
+    /* Giao diện nút cược Tài Xỉu phong cách Xóc Đĩa */
+    .btn-hit-xiu, .btn-hit-tai {
+        background: rgba(24, 24, 27, 0.9);
+        border: 2px solid rgba(255, 255, 255, 0.05);
+        border-radius: 20px !important;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5) !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+    .btn-hit-xiu:active, .btn-hit-tai:active { transform: scale(0.95) !important; }
+    .btn-hit-xiu.active { border-color: #3b82f6; box-shadow: 0 0 25px rgba(59, 130, 246, 0.5) !important; }
+    .btn-hit-tai.active { border-color: #ef4444; box-shadow: 0 0 25px rgba(239, 68, 68, 0.5) !important; }
+
+    /* Ghi đè để đèn LED thắng có tác dụng */
+    .led-win {
+        animation: led-win-pulse 0.5s infinite alternate !important;
+        border: 3px solid #ffd700 !important;
+        box-shadow: 0 0 30px #ffd700, inset 0 0 15px #ffd700 !important;
+    }
+
+    .btn-hit-xiu span.text-3xl, .btn-hit-tai span.text-3xl {
+        color: white !important;
+        font-weight: 900 !important;
+    }
+    .btn-hit-xiu.active span.text-3xl { color: #3b82f6 !important; }
+    .btn-hit-tai.active span.text-3xl { color: #ef4444 !important; }
+
+    /* Hiệu ứng Nổ Hũ */
+    .gold-gradient-text {
+        background: linear-gradient(to bottom, #fff3a0 0%, #d4af37 40%, #8a6d3b 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+    }
+
+    /* Slot Machine Frame */
+    .slot-machine-body {
+        background: linear-gradient(180deg, #444, #222);
+        border: 10px solid #d4af37;
+        border-radius: 40px;
+        padding: 20px;
+        box-shadow: 0 0 100px rgba(212,175,55,0.2), inset 0 0 20px rgba(0,0,0,0.5);
+    }
+    .reel-window {
+        background: #000;
+        border: 4px solid #1a1a1a;
+        box-shadow: inset 0 0 30px rgba(0,0,0,1);
+    }
+</style>
+
+<div id="lobbyContainer" class="flex flex-col h-full overflow-hidden bg-transparent z-10 relative">
+    <!-- Hitclub Header -->
+    <header class="sticky top-0 z-50 px-2 py-2 flex items-center justify-between bg-black/60 backdrop-blur-xl border-b border-[#d4af37]/30 shadow-2xl">
+        <!-- User Info (Left) -->
+        <div class="flex items-center gap-2">
+            <div class="relative w-12 h-12 rounded-full border-2 border-[#d4af37] p-0.5 shadow-[0_0_10px_rgba(212,175,55,0.5)] cursor-pointer haptic-btn" onclick="openModal('profileModal')">
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=@User.Identity?.Name" alt="Avatar" class="w-full h-full rounded-full bg-[#2a0808]" />
+                <div class="absolute -bottom-2 -right-1 bg-gradient-to-r from-[#d4af37] to-[#ffd700] text-black text-[9px] font-black px-1.5 rounded-sm border border-black shadow-lg">VIP 1</div>
             </div>
             <div class="flex flex-col">
-                <span class="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Chào mừng,</span>
-                <span id="profileUsername" class="font-black text-xs gold-gradient-text">@User.Identity?.Name</span>
+                <div class="flex items-center gap-2">
+                    <span id="profileUsername" class="font-bold text-xs text-[#ffd700] drop-shadow-md truncate max-w-[80px]">@User.Identity?.Name</span>
+                    @if (User.IsInRole("Admin"))
+                    {
+                        <a href="/Admin/GameControl" class="w-5 h-5 bg-red-600 rounded-full flex items-center justify-center text-white text-[10px] shadow-lg animate-pulse" title="Admin Control">
+                            <i class="fa-solid fa-screwdriver-wrench"></i>
+                        </a>
+                    }
+                </div>
+                <div class="flex items-center gap-1 mt-0.5">
+                    <span class="text-[10px] text-gray-300">ID: 104829</span>
+                </div>
             </div>
         </div>
 
-        <div class="h-10 flex items-center justify-center">
-            <img src="~/logo.png" alt="Logo" class="h-full object-contain drop-shadow-[0_0_8px_rgba(255,223,0,0.3)]" />
-        </div>
-
-        <div class="flex items-center gap-4">
-            <div class="capsule-balance">
-                <span id="balance" class="text-sm font-black text-yellow-400">0</span>
-                <div class="btn-plus-emerald haptic-btn" onclick="openModal('depositModal')">+</div>
+        <!-- Balance (Center/Right) -->
+        <div class="flex items-center gap-1 bg-black/60 rounded-full pl-3 pr-1 py-1 border border-[#d4af37]/30 shadow-inner">
+            <i class="fa-solid fa-coins text-[#ffd700] text-sm"></i>
+            <span id="balance" class="text-sm font-black text-white tracking-wider ml-1 w-20 text-right">0</span>
+            <div class="w-7 h-7 bg-gradient-to-b from-[#ffd700] to-[#b8860b] rounded-full flex items-center justify-center text-black font-black ml-2 cursor-pointer haptic-btn shadow-[0_0_8px_rgba(255,215,0,0.6)]" onclick="openModal('depositModal')">
+                <i class="fa-solid fa-plus text-sm"></i>
             </div>
-            <form asp-controller="Account" asp-action="Logout" method="post" class="haptic-btn">
-                <button type="submit" class="text-zinc-500 hover:text-white transition-colors">
-                    <i class="fa-solid fa-right-from-bracket text-lg"></i>
+        </div>
+    </header>
+
+    <!-- Top Action Bar (Nạp, Rút, etc.) -->
+    <div class="flex justify-between px-3 py-2 z-40 relative">
+        <div class="flex gap-2">
+            <button onclick="openModal('depositModal')" class="hitclub-action-btn haptic-btn">
+                <div class="icon-wrap bg-gradient-to-b from-yellow-300 to-yellow-600"><i class="fa-solid fa-piggy-bank text-black"></i></div>
+                <span>NẠP TIỀN</span>
+            </button>
+            <button onclick="openModal('withdrawModal')" class="hitclub-action-btn haptic-btn">
+                <div class="icon-wrap bg-gradient-to-b from-blue-300 to-blue-600"><i class="fa-solid fa-money-bill-transfer text-black"></i></div>
+                <span>RÚT TIỀN</span>
+            </button>
+        </div>
+        <div class="flex gap-2">
+            <form asp-controller="Account" asp-action="Logout" method="post" class="haptic-btn flex items-center">
+                <button type="submit" class="w-8 h-8 rounded-full bg-black/50 border border-white/20 flex items-center justify-center text-white hover:text-red-400">
+                    <i class="fa-solid fa-power-off text-xs"></i>
                 </button>
             </form>
         </div>
-    </header>
-
-    <!-- Marquee Notification -->
-    <div class="marquee-bar">
-        <div class="marquee-content">
-            <i class="fa-solid fa-bullhorn text-yellow-500 mr-2"></i>
-            Chúc mừng người chơi <span class="text-white font-bold">@User.Identity?.Name</span> vừa thắng lớn tại nổ hũ Thần Tài... 
-            <span class="mx-10"></span>
-            Hệ thống nạp rút tự động 24/7 siêu tốc...
-        </div>
     </div>
 
-    <main class="flex-1 overflow-y-auto custom-scroll pb-24 px-4 space-y-6 pt-4">
-        <!-- Banner Carousel (Placeholder) -->
-        <div class="relative w-full h-32 rounded-3xl overflow-hidden shadow-2xl border border-white/5">
-            <img src="https://images.unsplash.com/photo-1518893063132-36e46dbe2428?auto=format&fit=crop&q=80&w=800" class="w-full h-full object-cover" />
-            <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-4">
-                <div class="gold-gradient-text font-black text-lg italic uppercase tracking-tighter">SỰ KIỆN X6 HŨ THẦN TÀI</div>
-            </div>
-        </div>
-
-        <!-- Category Tabs -->
-        <div class="flex gap-4 overflow-x-auto no-scrollbar py-2">
-            <div class="px-6 py-2 rounded-full bg-yellow-500 text-black font-black text-[10px] uppercase shadow-lg shadow-yellow-500/20 whitespace-nowrap">Tất cả</div>
-            <div class="px-6 py-2 rounded-full bg-zinc-900 text-zinc-500 font-black text-[10px] uppercase whitespace-nowrap hover:text-white transition">Nổ hũ</div>
-            <div onclick="showMaintenance()" class="px-6 py-2 rounded-full bg-zinc-900 text-zinc-500 font-black text-[10px] uppercase whitespace-nowrap hover:text-white transition cursor-pointer">Casino</div>
-            <div onclick="showMaintenance()" class="px-6 py-2 rounded-full bg-zinc-900 text-zinc-500 font-black text-[10px] uppercase whitespace-nowrap hover:text-white transition cursor-pointer">Mini Game</div>
-        </div>
-
-        <!-- Game Grid -->
-        <div class="game-grid grid grid-cols-2 gap-4">
-            <!-- Tài Xỉu Card -->
-            <div onclick="toggleGame('taiXiu')" class="game-card-mini animate-fadeIn stagger-1 group cursor-pointer">
-                <div class="game-ribbon-mini">HOT</div>
-                <div class="mini-icon">🎲</div>
-                <div class="font-black text-[11px] uppercase tracking-widest text-white group-hover:text-yellow-500 transition mt-2">TÀI XỈU</div>
-                <div class="text-[8px] text-zinc-500 font-bold mt-1">1,284 ONLINE</div>
-            </div>
-
-            <!-- Nổ Hũ Thần Tài Card -->
-            <div onclick="toggleGame('slot')" class="game-card-mini animate-fadeIn stagger-2 group cursor-pointer">
-                <div class="game-ribbon-mini bg-emerald-500">NEW</div>
-                <div class="mini-icon">🎰</div>
-                <div class="font-black text-[11px] uppercase tracking-widest text-white mt-2">THẦN TÀI</div>
-                <div class="text-[8px] text-yellow-500 font-bold mt-1">125M JACKPOT</div>
-            </div>
-
-            <!-- Xóc Đĩa Card -->
-            <div onclick="toggleGame('xocDia')" class="game-card-mini animate-fadeIn stagger-3 group cursor-pointer">
-                <div class="mini-icon">🪙</div>
-                <div class="font-black text-[11px] uppercase tracking-widest text-white mt-2">XÓC ĐĨA</div>
-                <div class="text-[8px] text-zinc-500 font-bold mt-1">842 ONLINE</div>
-            </div>
-
-            <!-- Bầu Cua Card -->
-            <div onclick="toggleGame('bauCua')" class="game-card-mini animate-fadeIn stagger-4 group cursor-pointer">
-                <div class="mini-icon">🦀</div>
-                <div class="font-black text-[11px] uppercase tracking-widest text-white mt-2">BẦU CUA</div>
-                <div class="text-[8px] text-zinc-500 font-bold mt-1">561 ONLINE</div>
-            </div>
-        </div>
-    </main>
-
-    <!-- Bottom Dock Footer -->
-    <nav class="bottom-dock">
-        <div onclick="location.reload()" class="flex flex-col items-center gap-1 text-yellow-500 haptic-btn">
-            <i class="fa-solid fa-house text-lg"></i>
-            <span class="text-[8px] font-black uppercase">Trang chủ</span>
-        </div>
-        <div onclick="openModal('historyModal')" class="flex flex-col items-center gap-1 text-zinc-500 haptic-btn">
-            <i class="fa-solid fa-clock-rotate-left text-lg"></i>
-            <span class="text-[8px] font-black uppercase">Lịch sử</span>
-        </div>
-        <div onclick="openModal('depositModal')" class="dock-action-center haptic-btn">
-            <i class="fa-solid fa-plus"></i>
-        </div>
-        <div onclick="openModal('withdrawModal')" class="flex flex-col items-center gap-1 text-zinc-500 haptic-btn">
-            <i class="fa-solid fa-money-bill-transfer text-lg"></i>
-            <span class="text-[8px] font-black uppercase">Rút tiền</span>
-        </div>
-        <div onclick="openModal('profileModal')" class="flex flex-col items-center gap-1 text-zinc-500 haptic-btn">
-            <i class="fa-solid fa-user text-lg"></i>
-            <span class="text-[8px] font-black uppercase">Cá nhân</span>
-        </div>
-        @if (User.IsInRole("Admin"))
-        {
-            <a href="/Admin" class="flex flex-col items-center gap-1 text-red-500 haptic-btn">
-                <i class="fa-solid fa-user-shield text-lg"></i>
-                <span class="text-[8px] font-black uppercase">Quản lý</span>
-            </a>
-        }
-    </nav>
-</div>
-
-<!-- Tai Xiu Game Overlay -->
-<div id="taiXiuGame" class="fixed inset-0 z-[200] bg-black/95 hidden flex-col overflow-hidden">
-    <header class="px-4 py-1 flex items-center justify-between border-b border-white/5 shrink-0">
-        <div onclick="toggleGame('taiXiu')" class="h-10 w-10 flex items-center justify-center bg-zinc-900 rounded-full text-white haptic-btn">
-            <i class="fa-solid fa-chevron-left"></i>
-        </div>
-        <div class="flex flex-col items-center">
-            <span class="text-[8px] text-zinc-500 font-black uppercase tracking-[0.3em]">Game phiên</span>
-            <span id="sessionCodeDisplay" class="text-[10px] font-bold text-yellow-500">#000000</span>
-            <div class="text-[9px] font-black text-yellow-400 mt-0.5"><i class="fa-solid fa-wallet mr-1"></i><span class="mini-balance">0</span></div>
-        </div>
-        <div onclick="openModal('chartModal')" class="h-10 w-10 flex items-center justify-center bg-zinc-900 rounded-full text-yellow-500 haptic-btn">
-            <i class="fa-solid fa-chart-line"></i>
-        </div>
-    </header>
-
-    <div class="flex-1 flex flex-col items-center justify-between py-2 px-4 overflow-hidden">
-        <!-- Status & Timer -->
-        <div class="text-center shrink-0">
-            <div id="phaseText" class="text-[8px] text-zinc-500 uppercase font-black tracking-widest">Đang đặt cược</div>
-            <div id="countdown" class="text-4xl font-black text-yellow-400 font-mono tracking-tighter">40</div>
-        </div>
-
-        <!-- Main Game Area -->
-        <div class="w-full flex items-center justify-center gap-2">
-            <!-- XỈU Button -->
-            <div class="flex-1 relative max-w-[140px]">
-                <span id="placedBetXiu" class="bet-badge hidden pointer-events-none">0đ</span>
-                <button type="button" onclick="selectSide('left')" id="btnLeft" class="btn-hit-xiu w-full py-6 flex flex-col items-center haptic-btn">
-                    <span class="text-3xl font-black italic">XỈU</span>
-                    <span class="text-[8px] opacity-60 font-bold uppercase tracking-widest">4-10</span>
-                </button>
-                <div class="text-center mt-3">
-                    <div class="text-[8px] text-zinc-500 font-bold uppercase mb-1">Tổng cược</div>
-                    <div id="totalXiu" class="text-blue-400 font-black text-lg">0</div>
+    <main class="flex-1 overflow-y-auto custom-scroll pb-28 px-2 space-y-4 pt-1 z-10 relative">
+        
+        <!-- Hitclub Marquee -->
+        <div class="bg-black/50 border-y border-[#d4af37]/30 py-1 flex items-center px-2 shadow-lg backdrop-blur-sm">
+            <i class="fa-solid fa-volume-high text-[#ffd700] text-xs mr-2 animate-pulse"></i>
+            <div class="overflow-hidden whitespace-nowrap w-full">
+                <div class="inline-block animate-[marquee_15s_linear_infinite] text-[11px] text-white font-medium">
+                    <span class="text-[#ffd700]">Cổng game bài đổi thưởng HITCLUB - Tỷ lệ 1:1 siêu tốc.</span> Chúc mừng người chơi <span class="text-green-400">@User.Identity?.Name</span> vừa Nổ Hũ 100M...
                 </div>
             </div>
+        </div>
 
-            <!-- 3D Dice Surface -->
-            <div class="casino-surface scale-75">
-                <div id="winEffect" class="win-particles"></div>
-                <div class="plate-container">
-                    <div id="mainPlate" class="relative w-full h-full flex items-center justify-center gap-1">
-                        <div id="bowl" class="bowl absolute inset-0 z-50 rounded-full"></div>
-                        @for (int i = 1; i <= 3; i++)
-                        {
-                            <div class="dice-wrapper">
-                                <div id="dice@(i)" class="cube">
-                                    <div class="face face-1"><span class="dot"></span></div>
-                                    <div class="face face-2"><span class="dot"></span><span class="dot"></span></div>
-                                    <div class="face face-3"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
-                                    <div class="face face-4">
-                                        <div class="column"><span class="dot"></span><span class="dot"></span></div>
-                                        <div class="column"><span class="dot"></span><span class="dot"></span></div>
-                                    </div>
-                                    <div class="face face-5">
-                                        <div class="column"><span class="dot"></span><span class="dot"></span></div>
-                                        <div class="column"><span class="dot"></span></div>
-                                        <div class="column"><span class="dot"></span><span class="dot"></span></div>
-                                    </div>
-                                    <div class="face face-6">
-                                        <div class="column"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
-                                        <div class="column"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
-                                    </div>
-                                </div>
-                            </div>
-                        }
+        <!-- Hitclub Banner Slider -->
+        <div class="w-full h-36 rounded-xl overflow-hidden shadow-[0_0_15px_rgba(0,0,0,0.8)] border border-[#d4af37]/40 relative">
+            <img src="https://images.unsplash.com/photo-1596838132731-3301c3fd4317?q=80&w=800&auto=format&fit=crop" class="w-full h-full object-cover" />
+            <div class="absolute inset-0 bg-gradient-to-t from-[#4a0000]/90 to-transparent flex items-end p-3">
+                <div class="text-[#ffd700] font-black text-xl uppercase italic drop-shadow-[0_2px_2px_rgba(0,0,0,1)] tracking-widest">SỰ KIỆN X6 HŨ</div>
+            </div>
+            <!-- Slider dots -->
+            <div class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                <div class="w-4 h-1.5 bg-[#ffd700] rounded-full"></div>
+                <div class="w-1.5 h-1.5 bg-white/50 rounded-full"></div>
+                <div class="w-1.5 h-1.5 bg-white/50 rounded-full"></div>
+            </div>
+        </div>
+
+        <!-- Game Categories -->
+        <div class="flex gap-2 overflow-x-auto no-scrollbar py-1">
+            <button class="hitclub-tab active">TẤT CẢ</button>
+            <button class="hitclub-tab">GAME BÀI</button>
+            <button class="hitclub-tab">SLOTS</button>
+            <button class="hitclub-tab">MINI GAME</button>
+        </div>
+
+        <!-- Hitclub Game Grid -->
+        <div class="grid grid-cols-2 gap-3 px-1">
+            
+            <!-- Tài Xỉu (Large Card) -->
+            <div onclick="toggleGame('taiXiu')" class="col-span-2 hitclub-game-card h-32 haptic-btn group">
+                <img src="https://images.unsplash.com/photo-1596838132731-3301c3fd4317?q=80&w=400&auto=format&fit=crop" class="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:opacity-60 transition" />
+                <div class="absolute inset-0 bg-gradient-to-r from-[#4a0000] to-transparent"></div>
+                <div class="absolute top-2 right-2 flex gap-1">
+                    <span class="bg-red-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow-lg animate-pulse">HOT</span>
+                </div>
+                <div class="relative z-10 flex h-full items-center px-4">
+                    <div class="w-16 h-16 mr-4 animate-bounce-slow filter drop-shadow-[0_0_10px_rgba(255,215,0,0.8)] text-5xl">🎲</div>
+                    <div>
+                        <h3 class="text-[#ffd700] font-black text-2xl uppercase italic drop-shadow-md tracking-wider">Tài Xỉu</h3>
+                        <div class="flex items-center gap-1 mt-1">
+                            <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                            <span class="text-[10px] text-gray-300">12,584 người chơi</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- TÀI Button -->
-            <div class="flex-1 relative max-w-[140px]">
-                <span id="placedBetTai" class="bet-badge hidden pointer-events-none">0đ</span>
-                <button type="button" onclick="selectSide('right')" id="btnRight" class="btn-hit-tai w-full py-6 flex flex-col items-center haptic-btn">
-                    <span class="text-3xl font-black italic">TÀI</span>
-                    <span class="text-[8px] opacity-60 font-bold uppercase tracking-widest">11-17</span>
-                </button>
-                <div class="text-center mt-3">
-                    <div class="text-[8px] text-zinc-500 font-bold uppercase mb-1">Tổng cược</div>
-                    <div id="totalTai" class="text-red-500 font-black text-lg">0</div>
+            <!-- Tiến Lên -->
+            <div onclick="showMaintenance()" class="hitclub-game-card h-28 haptic-btn group">
+                <div class="absolute inset-0 bg-gradient-to-br from-[#1a0f00] to-[#3d2300]"></div>
+                <div class="relative z-10 flex flex-col items-center justify-center h-full">
+                    <div class="text-4xl filter drop-shadow-md group-hover:scale-110 transition">🃏</div>
+                    <h3 class="text-white font-black text-sm uppercase mt-2 drop-shadow-md">Tiến Lên</h3>
                 </div>
+            </div>
+
+            <!-- Xóc Đĩa -->
+            <div onclick="toggleGame('xocDia')" class="hitclub-game-card h-28 haptic-btn group">
+                <div class="absolute inset-0 bg-gradient-to-br from-[#2a0000] to-[#5e0000]"></div>
+                <div class="relative z-10 flex flex-col items-center justify-center h-full">
+                    <div class="text-4xl filter drop-shadow-md group-hover:scale-110 transition">🪙</div>
+                    <h3 class="text-white font-black text-sm uppercase mt-2 drop-shadow-md">Xóc Đĩa</h3>
+                </div>
+            </div>
+
+            <!-- Nổ Hũ Thần Tài -->
+            <div onclick="toggleGame('slot')" class="hitclub-game-card h-28 haptic-btn group">
+                <div class="absolute inset-0 bg-gradient-to-br from-[#3d0000] to-[#1a0000]"></div>
+                <div class="absolute top-0 right-0 bg-[#ffd700] text-black text-[8px] font-black px-1.5 py-0.5 rounded-bl shadow-lg">JACKPOT</div>
+                <div class="relative z-10 flex flex-col items-center justify-center h-full">
+                    <div class="text-4xl filter drop-shadow-[0_0_10px_rgba(255,215,0,0.5)] group-hover:scale-110 transition">🎰</div>
+                    <h3 class="text-[#ffd700] font-black text-sm uppercase mt-2 drop-shadow-md">Thần Tài</h3>
+                </div>
+            </div>
+
+            <!-- Bầu Cua -->
+            <div onclick="toggleGame('bauCua')" class="hitclub-game-card h-28 haptic-btn group">
+                <div class="absolute inset-0 bg-gradient-to-br from-[#001f3d] to-[#000a14]"></div>
+                <div class="relative z-10 flex flex-col items-center justify-center h-full">
+                    <div class="text-4xl filter drop-shadow-md group-hover:scale-110 transition">🦀</div>
+                    <h3 class="text-white font-black text-sm uppercase mt-2 drop-shadow-md">Bầu Cua</h3>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Hitclub Bottom Dock -->
+    <nav class="fixed bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black via-black/95 to-black/80 border-t border-[#d4af37]/30 flex justify-around items-end pb-2 z-50">
+        <div onclick="location.reload()" class="hitclub-dock-item active">
+            <i class="fa-solid fa-house"></i>
+            <span>Trang Chủ</span>
+        </div>
+        <div onclick="openModal('historyModal')" class="hitclub-dock-item">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+            <span>Lịch Sử</span>
+        </div>
+        @if (User.IsInRole("Admin"))
+        {
+            <div onclick="window.location.href='/Admin'" class="hitclub-dock-item !text-red-500">
+                <i class="fa-solid fa-user-shield"></i>
+                <span>Quản Lý</span>
+            </div>
+        }
+        
+        <!-- Center Action Button (Play) -->
+        <div class="relative -top-4 w-14 h-14 bg-gradient-to-b from-[#ffd700] to-[#b8860b] rounded-full flex items-center justify-center border-4 border-black shadow-[0_0_15px_rgba(255,215,0,0.5)] haptic-btn z-50">
+            <i class="fa-solid fa-gamepad text-black text-2xl drop-shadow-md"></i>
+        </div>
+
+        <div onclick="showMaintenance()" class="hitclub-dock-item">
+            <i class="fa-solid fa-gift"></i>
+            <span>Sự Kiện</span>
+        </div>
+        <div onclick="openModal('profileModal')" class="hitclub-dock-item">
+            <i class="fa-solid fa-user"></i>
+            <span>Cá Nhân</span>
+        </div>
+    </nav>
+</div>
+
+<!-- Tai Xiu Game Overlay -->
+<div id="taiXiuGame" class="fixed inset-0 z-[200] bg-gradient-to-br from-[#1a0505] via-[#0d0202] to-[#000000] backdrop-blur-2xl hidden flex-col items-center justify-center p-2 sm:p-6 overflow-hidden">
+    <!-- Khung Bàn Chơi Capsule Đỏ Rượu Vang -->
+    <div class="relative w-full max-w-5xl h-[480px] sm:h-[560px] bg-gradient-to-b from-[#8a1212] via-[#5c0808] to-[#360303] rounded-[120px] sm:rounded-[250px] border-4 sm:border-8 border-[#eab308] shadow-[0_0_100px_rgba(234,179,8,0.3)] flex flex-col justify-between p-4 sm:p-8 my-auto">
+        
+        <!-- VỆ TINH 1: Nút Biểu Đồ (Góc trên Trái) -->
+        <div onclick="openModal('chartModal')" class="absolute -top-6 sm:-top-8 left-12 sm:left-32 w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-b from-blue-400 via-blue-600 to-blue-800 border-2 sm:border-4 border-yellow-400 flex items-center justify-center text-white text-lg sm:text-2xl shadow-[0_0_25px_rgba(37,99,235,0.8)] hover:scale-110 active:scale-95 transition-all cursor-pointer haptic-btn z-50">
+            <i class="fa-solid fa-chart-simple"></i>
+        </div>
+
+        <!-- VỆ TINH 2: Nút Đóng Game (Góc trên Phải) -->
+        <div onclick="toggleGame('taiXiu')" class="absolute -top-6 sm:-top-8 right-12 sm:right-32 w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-b from-red-500 via-red-700 to-red-900 border-2 sm:border-4 border-yellow-400 flex items-center justify-center text-white text-lg sm:text-2xl shadow-[0_0_25px_rgba(220,38,38,0.8)] hover:scale-110 active:scale-95 transition-all cursor-pointer haptic-btn z-50">
+            <i class="fa-solid fa-xmark"></i>
+        </div>
+
+        <!-- VỆ TINH CẠNH TRÁI -->
+        <div class="absolute top-1/2 -translate-y-1/2 -left-5 sm:-left-8 flex flex-col gap-3 sm:gap-6 z-50">
+            <div onclick="showMaintenance()" class="w-10 h-10 sm:w-14 sm:h-14 rounded-full bg-gradient-to-b from-[#8a1212] to-[#4a0a0a] border-2 border-yellow-400 flex items-center justify-center text-white text-sm sm:text-xl shadow-lg hover:scale-110 transition cursor-pointer haptic-btn">
+                <i class="fa-solid fa-question"></i>
+            </div>
+            <div onclick="openModal('historyModal')" class="w-10 h-10 sm:w-14 sm:h-14 rounded-full bg-gradient-to-b from-[#8a1212] to-[#4a0a0a] border-2 border-yellow-400 flex items-center justify-center text-white text-sm sm:text-xl shadow-lg hover:scale-110 transition cursor-pointer haptic-btn">
+                <i class="fa-solid fa-file-invoice-dollar"></i>
             </div>
         </div>
 
-        <div id="result" class="h-6 flex items-center justify-center"></div>
+        <!-- VỆ TINH CẠNH PHẢI -->
+        <div class="absolute top-1/2 -translate-y-1/2 -right-5 sm:-right-8 flex flex-col gap-3 sm:gap-6 z-50">
+            <div onclick="showMaintenance()" class="w-10 h-10 sm:w-14 sm:h-14 rounded-full bg-gradient-to-b from-[#8a1212] to-[#4a0a0a] border-2 border-yellow-400 flex items-center justify-center text-yellow-500 text-sm sm:text-xl shadow-lg hover:scale-110 transition cursor-pointer haptic-btn">
+                <i class="fa-solid fa-trophy"></i>
+            </div>
+            <div onclick="showMaintenance()" class="w-10 h-10 sm:w-14 sm:h-14 rounded-full bg-gradient-to-b from-[#8a1212] to-[#4a0a0a] border-2 border-yellow-400 flex items-center justify-center text-white text-sm sm:text-xl shadow-lg hover:scale-110 transition cursor-pointer haptic-btn">
+                <i class="fa-solid fa-comments"></i>
+            </div>
+            <div onclick="toggleNanMode()" class="w-10 h-10 sm:w-14 sm:h-14 rounded-full bg-gradient-to-b from-[#8a1212] to-[#4a0a0a] border-2 border-yellow-400 flex items-center justify-center text-white text-sm sm:text-xl shadow-lg hover:scale-110 transition cursor-pointer haptic-btn" id="btnNanToggle">
+                <i class="fa-solid fa-hand-sparkles"></i>
+            </div>
+        </div>
 
-        <!-- Bet Controls -->
-        <div class="w-full max-w-md space-y-1 shrink-0 pb-4">
-            <div id="gameHistoryChart" class="flex gap-1.5 overflow-x-auto no-scrollbar justify-center pb-1">
+        <!-- PHẦN TOP: Header Bàn Chơi -->
+        <div class="flex flex-col items-center shrink-0 pt-2 sm:pt-0">
+            <div class="flex items-center gap-4">
+                <div class="h-0.5 w-12 sm:w-24 bg-gradient-to-r from-transparent to-yellow-500"></div>
+                <h1 class="text-xl sm:text-4xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-yellow-100 to-yellow-500 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] uppercase italic">TÀI XỈU MD5</h1>
+                <div class="h-0.5 w-12 sm:w-24 bg-gradient-to-l from-transparent to-yellow-500"></div>
+            </div>
+            <div class="flex items-center gap-2 mt-1 bg-black/40 px-4 py-0.5 rounded-full border border-yellow-500/20">
+                <span class="text-[10px] sm:text-xs text-yellow-500 font-mono font-bold" id="sessionCodeDisplay">#284173</span>
+                <span class="text-zinc-500 text-[10px]">|</span>
+                <span class="text-[10px] sm:text-xs text-yellow-400 font-bold"><i class="fa-solid fa-wallet mr-1"></i><span class="mini-balance">0</span></span>
+            </div>
+            <!-- KHU VỰC THÔNG BÁO KẾT QUẢ ĐỘC LẬP (Không nằm trong đĩa quay) -->
+            <div id="result" class="h-10 sm:h-14 flex flex-col items-center justify-center pointer-events-none mt-1 z-50 transition-all duration-300"></div>
+        </div>
+
+        <!-- PHẦN GIỮA: Khu Vực Cược (XỈU - ĐĨA QUAY - TÀI) -->
+        <div class="flex items-center justify-between w-full max-w-4xl mx-auto my-auto px-1 sm:px-4 z-10">
+            
+            <!-- BÊN TRÁI: XỈU -->
+            <div class="flex flex-col items-center w-28 sm:w-48 transform hover:scale-105 transition duration-300">
+                <div class="flex items-center gap-1 mb-1 text-zinc-300 text-[10px] sm:text-xs bg-black/30 px-3 py-1 rounded-full border border-white/5">
+                    <i class="fa-solid fa-user-group text-blue-400"></i>
+                    <span id="userCountXiu">150</span>
+                </div>
+                <div class="text-4xl sm:text-7xl font-black text-white tracking-wider drop-shadow-[0_5px_15px_rgba(0,0,0,0.9)] mb-1">XỈU</div>
+                <div id="totalXiu" class="text-yellow-400 font-black text-base sm:text-2xl tracking-wider drop-shadow-[0_2px_8px_rgba(250,204,21,0.6)] mb-3 font-mono">0</div>
+                <button type="button" onclick="selectSide('left')" id="btnLeft" class="w-full py-2 sm:py-3 bg-gradient-to-r from-yellow-500 via-yellow-400 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-black font-black text-xs sm:text-lg rounded-full shadow-[0_10px_25px_rgba(0,0,0,0.6)] active:scale-95 transition-all border border-yellow-200 uppercase tracking-wider haptic-btn">
+                    CƯỢC
+                </button>
+                <span id="placedBetXiu" class="mt-2 text-xs sm:text-sm font-bold text-blue-400 bg-blue-500/10 px-3 py-0.5 rounded-full border border-blue-500/20 hidden pointer-events-none">0đ</span>
+            </div>
+
+            <!-- CHÍNH GIỮA: ĐĨA QUAY & ĐẾM NGƯỢC -->
+            <div class="relative w-36 h-36 sm:w-64 sm:h-64 rounded-full bg-gradient-to-b from-[#dc2626] via-[#b91c1c] to-[#7f1d1d] border-4 sm:border-8 border-[#facc15] shadow-[0_0_60px_rgba(250,204,21,0.6)] flex items-center justify-center overflow-hidden shrink-0 group">
+                <!-- Vòng sáng lấp lánh bên trong -->
+                <div class="absolute inset-2 rounded-full border border-yellow-300/40 pointer-events-none animate-spin-slow"></div>
+                <div class="absolute inset-4 rounded-full border border-yellow-500/20 pointer-events-none"></div>
+
+                <!-- Đếm ngược (Hiển thị khi đang cược) -->
+                <div id="countdownContainer" class="absolute inset-0 flex flex-col items-center justify-center z-20 transition-all duration-500">
+                    <div id="countdown" class="text-5xl sm:text-8xl font-black text-[#ffd700] tracking-tighter drop-shadow-[0_5px_15px_rgba(0,0,0,0.9)] font-mono">40</div>
+                    <div id="phaseText" class="text-[9px] sm:text-xs text-white font-bold tracking-widest uppercase mt-1 drop-shadow">ĐANG ĐẶT CƯỢC</div>
+                </div>
+
+                <!-- Bát và Xúc Xắc 3D (Hiển thị khi rolling/mở bát) -->
+                <div id="diceContainer" class="absolute inset-0 flex items-center justify-center z-30 transition-all duration-500 opacity-0 pointer-events-none scale-75 sm:scale-100">
+                    <div class="casino-surface w-full h-full !border-none !shadow-none !bg-transparent flex items-center justify-center">
+                        <div id="winEffect" class="win-particles"></div>
+                        <div id="mainPlate" class="relative w-full h-full flex items-center justify-center gap-2">
+                            <div id="bowl" class="bowl absolute inset-0 z-50 rounded-full !bg-gradient-to-br !from-zinc-700 !to-zinc-900 !border-4 !border-zinc-600 shadow-2xl"></div>
+                            @for (int i = 1; i <= 3; i++)
+                            {
+                                <div class="dice-wrapper">
+                                    <div id="dice@(i)" class="cube">
+                                        <div class="face face-1"><div class="dot"></div></div>
+                                        <div class="face face-2"><div class="dot" style="grid-area:1/3"></div><div class="dot" style="grid-area:3/1"></div></div>
+                                        <div class="face face-3"><div class="dot" style="grid-area:1/3"></div><div class="dot" style="grid-area:2/2"></div><div class="dot" style="grid-area:3/1"></div></div>
+                                        <div class="face face-4"><div class="dot" style="grid-area:1/1"></div><div class="dot" style="grid-area:1/3"></div><div class="dot" style="grid-area:3/1"></div><div class="dot" style="grid-area:3/3"></div></div>
+                                        <div class="face face-5"><div class="dot" style="grid-area:1/1"></div><div class="dot" style="grid-area:1/3"></div><div class="dot" style="grid-area:2/2"></div><div class="dot" style="grid-area:3/1"></div><div class="dot" style="grid-area:3/3"></div></div>
+                                        <div class="face face-6"><div class="dot" style="grid-area:1/1"></div><div class="dot" style="grid-area:1/3"></div><div class="dot" style="grid-area:2/1"></div><div class="dot" style="grid-area:2/3"></div><div class="dot" style="grid-area:3/1"></div><div class="dot" style="grid-area:3/3"></div></div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BÊN PHẢI: TÀI -->
+            <div class="flex flex-col items-center w-28 sm:w-48 transform hover:scale-105 transition duration-300">
+                <div class="flex items-center gap-1 mb-1 text-zinc-300 text-[10px] sm:text-xs bg-black/30 px-3 py-1 rounded-full border border-white/5">
+                    <i class="fa-solid fa-user-group text-red-400"></i>
+                    <span id="userCountTai">149</span>
+                </div>
+                <div class="text-4xl sm:text-7xl font-black text-white tracking-wider drop-shadow-[0_5px_15px_rgba(0,0,0,0.9)] mb-1">TÀI</div>
+                <div id="totalTai" class="text-yellow-400 font-black text-base sm:text-2xl tracking-wider drop-shadow-[0_2px_8px_rgba(250,204,21,0.6)] mb-3 font-mono">0</div>
+                <button type="button" onclick="selectSide('right')" id="btnRight" class="w-full py-2 sm:py-3 bg-gradient-to-r from-yellow-500 via-yellow-400 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-black font-black text-xs sm:text-lg rounded-full shadow-[0_10px_25px_rgba(0,0,0,0.6)] active:scale-95 transition-all border border-yellow-200 uppercase tracking-wider haptic-btn">
+                    CƯỢC
+                </button>
+                <span id="placedBetTai" class="mt-2 text-xs sm:text-sm font-bold text-red-400 bg-red-500/10 px-3 py-0.5 rounded-full border border-red-500/20 hidden pointer-events-none">0đ</span>
+            </div>
+
+        </div>
+
+        <!-- PHẦN BOTTOM: Lịch Sử & Chuỗi Hash MD5 -->
+        <div class="flex flex-col items-center w-full shrink-0 gap-2">
+            <!-- Lịch sử phiên (Chấm tròn) -->
+            <div id="gameHistoryChart" class="flex gap-1.5 justify-center overflow-x-auto no-scrollbar max-w-lg mx-auto py-1 px-4 bg-black/30 rounded-full border border-white/5">
                 <!-- History dots -->
             </div>
             
-            <div class="flex justify-center gap-2 overflow-x-auto no-scrollbar py-2">
-                <div onclick="addBetAmount(10000)" class="chip chip-10k scale-90">10K</div>
-                <div onclick="addBetAmount(50000)" class="chip chip-50k scale-90">50K</div>
-                <div onclick="addBetAmount(100000)" class="chip chip-100k scale-90">100K</div>
-                <div onclick="addBetAmount(500000)" class="chip chip-500k scale-90">500K</div>
-                <div onclick="setAllIn()" class="chip chip-max scale-90">MAX</div>
-            </div>
-
-            <div class="flex gap-2 bg-zinc-900/50 p-1.5 rounded-2xl border border-white/5">
-                <input type="number" id="betAmount" value="10000" class="flex-1 bg-transparent px-4 font-black text-yellow-400 outline-none text-xl w-0" />
-                <button onclick="placeBet()" id="playBtn" class="bg-yellow-500 text-black px-8 py-3 rounded-xl font-black text-sm haptic-btn">ĐẶT CƯỢC</button>
+            <!-- Chuỗi Hash MD5 -->
+            <div class="flex items-center justify-between w-full max-w-lg mx-auto bg-black/60 border border-yellow-500/40 rounded-full pl-4 pr-1 py-1 shadow-inner">
+                <span class="text-[10px] sm:text-xs text-yellow-500 font-black uppercase whitespace-nowrap mr-2">CHUỖI HASH</span>
+                <span class="text-[9px] sm:text-xs text-zinc-300 font-mono truncate flex-1 text-center select-all" id="md5HashDisplay">af94fb696f2e715b8152b9f6a3bb3b3a</span>
+                <button onclick="copyHash()" class="bg-gradient-to-r from-yellow-500 to-yellow-600 text-black font-black text-[10px] sm:text-xs px-3 py-1.5 rounded-full shadow hover:scale-105 active:scale-95 transition haptic-btn ml-2">
+                    COPY
+                </button>
             </div>
         </div>
+
+        <!-- BẢNG ĐẶT CƯỢC NHANH (Hiển thị khi bấm CƯỢC) -->
+        <div id="quickBetPanel" class="absolute inset-x-8 bottom-6 bg-zinc-900/95 backdrop-blur-xl border-2 border-yellow-500/50 rounded-3xl p-4 shadow-2xl hidden flex-col z-50 animate-slideUp">
+            <div class="flex justify-between items-center mb-3 border-b border-white/10 pb-2">
+                <span class="text-xs font-black text-yellow-500 uppercase tracking-wider" id="quickBetTitle">ĐẶT CƯỢC TÀI XỈU</span>
+                <i class="fa-solid fa-xmark text-white text-lg cursor-pointer hover:text-red-500 transition" onclick="closeQuickBet()"></i>
+            </div>
+            <div class="flex justify-center gap-2 overflow-x-auto no-scrollbar py-2 mb-3">
+                <div onclick="addBetAmount(10000)" class="chip chip-10k scale-90 sm:scale-100 cursor-pointer">10K</div>
+                <div onclick="addBetAmount(50000)" class="chip chip-50k scale-90 sm:scale-100 cursor-pointer">50K</div>
+                <div onclick="addBetAmount(100000)" class="chip chip-100k scale-90 sm:scale-100 cursor-pointer">100K</div>
+                <div onclick="addBetAmount(500000)" class="chip chip-500k scale-90 sm:scale-100 cursor-pointer">500K</div>
+                <div onclick="setAllIn()" class="chip chip-max scale-90 sm:scale-100 cursor-pointer">MAX</div>
+            </div>
+            <div class="hitclub-input-group flex gap-2">
+                <input type="number" id="betAmount" value="10000" class="flex-1 bg-black/60 border border-yellow-500/30 rounded-xl px-4 py-2 text-white font-black text-lg outline-none focus:border-yellow-500" />
+                <button onclick="placeBet()" id="playBtn" class="bg-gradient-to-r from-yellow-400 to-yellow-600 text-black px-8 py-2.5 rounded-xl font-black text-sm haptic-btn shadow-lg hover:scale-105 active:scale-95 transition">XÁC NHẬN</button>
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -250,18 +469,17 @@
     </header>
 
     <div class="flex-1 flex flex-col items-center justify-center p-4 space-y-4 overflow-hidden">
-        <!-- Jackpot Display -->
+        <!-- Jackpot Nâng cấp -->
         <div class="w-full max-w-sm text-center shrink-0">
-            <div class="text-[10px] text-zinc-400 font-black uppercase tracking-widest mb-1">JACKPOT</div>
-            <div id="slotJackpot" class="text-2xl font-black italic gold-gradient-text drop-shadow-[0_0_15px_rgba(191,149,63,0.5)]">
+            <div class="text-[12px] text-yellow-500 font-black uppercase tracking-widest mb-1 animate-pulse">GRAND JACKPOT</div>
+            <div id="slotJackpot" class="text-4xl font-black italic gold-gradient-text drop-shadow-[0_0_20px_rgba(212,175,55,0.6)]">
                 100,000,000đ
             </div>
         </div>
 
         <!-- Slot Reels -->
-        <div class="w-full max-w-sm bg-zinc-900 border-4 border-zinc-800 rounded-[30px] p-2 shadow-2xl relative shrink-0">
-            <div class="absolute -inset-1 border border-white/5 rounded-[31px] pointer-events-none"></div>
-            <div class="grid grid-cols-3 gap-2 bg-black rounded-[22px] overflow-hidden p-2 relative h-32">
+        <div class="w-full max-w-sm slot-machine-body relative shrink-0">
+            <div class="grid grid-cols-3 gap-3 reel-window rounded-[20px] overflow-hidden p-3 relative h-40">
                 <!-- Winning Line Indicators -->
                 <div class="absolute inset-0 z-10 pointer-events-none border-y border-white/5 opacity-20"></div>
                 <div class="absolute inset-0 z-10 pointer-events-none flex items-center"><div class="w-full h-px bg-yellow-500/20"></div></div>
@@ -312,66 +530,145 @@
     </div>
 </div>
 <!-- Xóc Đĩa Game Overlay -->
-<div id="xocDiaGame" class="fixed inset-0 z-[200] bg-black/95 hidden flex-col overflow-hidden">
-    <header class="px-4 py-1 flex items-center justify-between border-b border-white/5 shrink-0">
-        <div onclick="toggleGame('xocDia')" class="h-10 w-10 flex items-center justify-center bg-zinc-900 rounded-full text-white haptic-btn">
-            <i class="fa-solid fa-chevron-left"></i>
-        </div>
-        <div class="flex flex-col items-center">
-            <span class="text-[8px] text-zinc-500 font-black uppercase tracking-[0.3em]">Game phiên</span>
-            <span class="text-[10px] font-bold text-yellow-500">#XD8888</span>
-            <div class="text-[9px] font-black text-yellow-400 mt-0.5"><i class="fa-solid fa-wallet mr-1"></i><span class="mini-balance">0</span></div>
-        </div>
-        <div class="h-10 w-10 flex items-center justify-center bg-zinc-900 rounded-full text-yellow-500">
-            <i class="fa-solid fa-circle-info"></i>
-        </div>
-    </header>
-
-    <div class="flex-1 flex flex-col items-center justify-center p-4 space-y-4 overflow-hidden">
-        <!-- Status & Timer -->
-        <div class="text-center shrink-0">
-            <div id="xocDiaPhaseText" class="text-[9px] text-zinc-500 uppercase font-black tracking-widest mb-1">Đang đặt cược</div>
-            <div id="xocDiaCountdown" class="text-4xl font-black text-yellow-400 font-mono">30</div>
+<div id="xocDiaGame" class="fixed inset-0 z-[200] bg-gradient-to-br from-[#1a0505] via-[#0d0202] to-[#000000] backdrop-blur-2xl hidden flex-col items-center justify-center p-2 sm:p-6 overflow-hidden">
+    <!-- Khung Bàn Chơi Capsule Đỏ Rượu Vang -->
+    <div class="relative w-full max-w-5xl h-[480px] sm:h-[560px] bg-gradient-to-b from-[#8a1212] via-[#5c0808] to-[#360303] rounded-[120px] sm:rounded-[250px] border-4 sm:border-8 border-[#eab308] shadow-[0_0_100px_rgba(234,179,8,0.3)] flex flex-col justify-between p-4 sm:p-8 my-auto">
+        
+        <!-- VỆ TINH 1: Nút Lịch Sử Cược (Góc trên Trái) -->
+        <div onclick="openModal('historyModal')" class="absolute -top-6 sm:-top-8 left-12 sm:left-32 w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-b from-[#8a1212] via-[#5c0808] to-[#360303] border-2 sm:border-4 border-yellow-400 flex items-center justify-center text-white text-lg sm:text-2xl shadow-[0_0_25px_rgba(234,179,8,0.5)] hover:scale-110 active:scale-95 transition-all cursor-pointer haptic-btn z-50">
+            <i class="fa-solid fa-file-invoice-dollar"></i>
         </div>
 
-        <!-- Coins Result Area -->
-        <div class="relative w-32 h-32 sm:w-64 sm:h-64 bg-zinc-900/50 rounded-full border-8 border-zinc-800 shadow-2xl flex items-center justify-center overflow-hidden shrink-0">
-            <div id="xocDiaPlate" class="w-24 h-24 sm:w-48 sm:h-48 bg-white/10 rounded-full border-4 border-white/5 flex items-center justify-center transition-transform duration-500">
-                <div id="xocDiaCoins" class="grid grid-cols-2 gap-2 sm:gap-4">
-                    <div class="w-5 h-5 sm:w-8 sm:h-8 rounded-full bg-red-500 shadow-lg"></div>
-                    <div class="w-5 h-5 sm:w-8 sm:h-8 rounded-full bg-red-500 shadow-lg"></div>
-                    <div class="w-5 h-5 sm:w-8 sm:h-8 rounded-full bg-white shadow-lg"></div>
-                    <div class="w-5 h-5 sm:w-8 sm:h-8 rounded-full bg-white shadow-lg"></div>
+        <!-- VỆ TINH 2: Nút Đóng Game (Góc trên Phải) -->
+        <div onclick="toggleGame('xocDia')" class="absolute -top-6 sm:-top-8 right-12 sm:right-32 w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-b from-red-500 via-red-700 to-red-900 border-2 sm:border-4 border-yellow-400 flex items-center justify-center text-white text-lg sm:text-2xl shadow-[0_0_25px_rgba(220,38,38,0.8)] hover:scale-110 active:scale-95 transition-all cursor-pointer haptic-btn z-50">
+            <i class="fa-solid fa-xmark"></i>
+        </div>
+
+        <!-- VỆ TINH CẠNH TRÁI: Hướng dẫn -->
+        <div class="absolute top-1/2 -translate-y-1/2 -left-5 sm:-left-8 flex flex-col gap-3 sm:gap-6 z-50">
+            <div onclick="showMaintenance()" class="w-10 h-10 sm:w-14 sm:h-14 rounded-full bg-gradient-to-b from-[#8a1212] to-[#4a0a0a] border-2 border-yellow-400 flex items-center justify-center text-white text-sm sm:text-xl shadow-lg hover:scale-110 transition cursor-pointer haptic-btn">
+                <i class="fa-solid fa-question"></i>
+            </div>
+        </div>
+
+        <!-- VỆ TINH CẠNH PHẢI: Nặn Bát -->
+        <div class="absolute top-1/2 -translate-y-1/2 -right-5 sm:-right-8 flex flex-col gap-3 sm:gap-6 z-50">
+            <div onclick="toggleNanMode()" class="w-10 h-10 sm:w-14 sm:h-14 rounded-full bg-gradient-to-b from-[#8a1212] to-[#4a0a0a] border-2 border-yellow-400 flex items-center justify-center text-white text-sm sm:text-xl shadow-lg hover:scale-110 transition cursor-pointer haptic-btn" id="btnXDNanToggle">
+                <i class="fa-solid fa-hand-sparkles"></i>
+            </div>
+        </div>
+
+        <!-- PHẦN TOP: Header Bàn Chơi -->
+        <div class="flex flex-col items-center shrink-0 pt-2 sm:pt-0">
+            <div class="flex items-center gap-4">
+                <div class="h-0.5 w-12 sm:w-24 bg-gradient-to-r from-transparent to-yellow-500"></div>
+                <h1 class="text-xl sm:text-4xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-yellow-100 to-yellow-500 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] uppercase italic">XÓC ĐĨA HOÀNG GIA</h1>
+                <div class="h-0.5 w-12 sm:w-24 bg-gradient-to-l from-transparent to-yellow-500"></div>
+            </div>
+            <div class="flex items-center gap-2 mt-1 bg-black/40 px-4 py-0.5 rounded-full border border-yellow-500/20">
+                <span class="text-[10px] sm:text-xs text-yellow-500 font-mono font-bold">#XD8888</span>
+                <span class="text-zinc-500 text-[10px]">|</span>
+                <span class="text-[10px] sm:text-xs text-yellow-400 font-bold"><i class="fa-solid fa-wallet mr-1"></i><span class="mini-balance">0</span></span>
+            </div>
+        </div>
+
+        <!-- PHẦN GIỮA: Khu Vực Cược (CHẴN - ĐĨA QUAY - LẺ) -->
+        <div class="flex items-center justify-between w-full max-w-4xl mx-auto my-auto px-1 sm:px-4 z-10">
+            
+            <!-- BÊN TRÁI: CHẴN -->
+            <div class="flex flex-col items-center w-28 sm:w-48 transform hover:scale-105 transition duration-300" id="btnXocDiaChan">
+                <div class="flex items-center gap-1 mb-1 text-zinc-300 text-[10px] sm:text-xs bg-black/30 px-3 py-1 rounded-full border border-white/5">
+                    <i class="fa-solid fa-user-group text-red-500"></i>
+                    <span id="userCountChan">168</span>
+                </div>
+                <div class="text-3xl sm:text-6xl font-black text-white tracking-wider drop-shadow-[0_5px_15px_rgba(0,0,0,0.9)] mb-1">CHẴN</div>
+                <div class="text-[10px] sm:text-xs text-zinc-400 font-bold uppercase tracking-widest mb-1">Tỷ lệ x2.0</div>
+                <div id="totalChan" class="text-yellow-400 font-black text-base sm:text-2xl tracking-wider drop-shadow-[0_2px_8px_rgba(250,204,21,0.6)] mb-3 font-mono">38,450,000</div>
+                <button type="button" onclick="selectXocDiaSide('chan')" class="w-full py-2 sm:py-3 bg-gradient-to-r from-yellow-500 via-yellow-400 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-black font-black text-xs sm:text-lg rounded-full shadow-[0_10px_25px_rgba(0,0,0,0.6)] active:scale-95 transition-all border border-yellow-200 uppercase tracking-wider haptic-btn">
+                    CƯỢC
+                </button>
+                <span id="placedBetXocDiaChan" class="mt-2 text-xs sm:text-sm font-bold text-yellow-400 bg-yellow-500/10 px-3 py-0.5 rounded-full border border-yellow-500/20 hidden pointer-events-none">0đ</span>
+            </div>
+
+            <!-- CHÍNH GIỮA: ĐĨA QUAY & ĐẾM NGƯỢC -->
+            <div class="relative w-36 h-36 sm:w-64 sm:h-64 rounded-full bg-gradient-to-b from-[#dc2626] via-[#b91c1c] to-[#7f1d1d] border-4 sm:border-8 border-[#facc15] shadow-[0_0_60px_rgba(250,204,21,0.6)] flex items-center justify-center overflow-hidden shrink-0 group">
+                <!-- Vòng sáng lấp lánh bên trong -->
+                <div class="absolute inset-2 rounded-full border border-yellow-300/40 pointer-events-none animate-spin-slow"></div>
+                <div class="absolute inset-4 rounded-full border border-yellow-500/20 pointer-events-none"></div>
+
+                <!-- Đếm ngược (Hiển thị khi đang cược) -->
+                <div id="xocDiaCountdownContainer" class="absolute inset-0 flex flex-col items-center justify-center z-20 transition-all duration-500">
+                    <div id="xocDiaCountdown" class="text-5xl sm:text-8xl font-black text-[#ffd700] tracking-tighter drop-shadow-[0_5px_15px_rgba(0,0,0,0.9)] font-mono">30</div>
+                    <div id="xocDiaPhaseText" class="text-[9px] sm:text-xs text-white font-bold tracking-widest uppercase mt-1 drop-shadow">ĐANG ĐẶT CƯỢC</div>
+                </div>
+
+                <!-- Bát và Đồng Xu 3D (Hiển thị khi rolling/mở bát) -->
+                <div id="xocDiaTableContainer" class="absolute inset-0 flex items-center justify-center z-30 transition-all duration-500 opacity-0 pointer-events-none scale-75 sm:scale-100">
+                    <div id="xocDiaPlate" class="w-24 h-24 sm:w-48 sm:h-48 bg-white/10 rounded-full border-4 border-white/5 flex items-center justify-center transition-transform duration-500 shadow-inner">
+                        <div id="xocDiaCoins" class="grid grid-cols-2 gap-2 sm:gap-4">
+                            <div class="w-5 h-5 sm:w-8 sm:h-8 rounded-full bg-red-500 shadow-lg"></div>
+                            <div class="w-5 h-5 sm:w-8 sm:h-8 rounded-full bg-red-500 shadow-lg"></div>
+                            <div class="w-5 h-5 sm:w-8 sm:h-8 rounded-full bg-white shadow-lg"></div>
+                            <div class="w-5 h-5 sm:w-8 sm:h-8 rounded-full bg-white shadow-lg"></div>
+                        </div>
+                    </div>
+                    <div id="xocDiaBowl" class="bowl absolute inset-0 z-50 rounded-full bg-gradient-to-br from-zinc-700 to-zinc-900 border-4 border-zinc-600 shadow-2xl"></div>
                 </div>
             </div>
-            <div id="xocDiaBowl" class="bowl absolute inset-0 z-50 rounded-full bg-gradient-to-br from-zinc-700 to-zinc-900 border-4 border-zinc-800 shadow-2xl"></div>
+
+            <!-- BÊN PHẢI: LẺ -->
+            <div class="flex flex-col items-center w-28 sm:w-48 transform hover:scale-105 transition duration-300" id="btnXocDiaLe">
+                <div class="flex items-center gap-1 mb-1 text-zinc-300 text-[10px] sm:text-xs bg-black/30 px-3 py-1 rounded-full border border-white/5">
+                    <i class="fa-solid fa-user-group text-white"></i>
+                    <span id="userCountLe">152</span>
+                </div>
+                <div class="text-3xl sm:text-6xl font-black text-white tracking-wider drop-shadow-[0_5px_15px_rgba(0,0,0,0.9)] mb-1">LẺ</div>
+                <div class="text-[10px] sm:text-xs text-zinc-400 font-bold uppercase tracking-widest mb-1">Tỷ lệ x2.0</div>
+                <div id="totalLe" class="text-yellow-400 font-black text-base sm:text-2xl tracking-wider drop-shadow-[0_2px_8px_rgba(250,204,21,0.6)] mb-3 font-mono">32,180,000</div>
+                <button type="button" onclick="selectXocDiaSide('le')" class="w-full py-2 sm:py-3 bg-gradient-to-r from-yellow-500 via-yellow-400 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-black font-black text-xs sm:text-lg rounded-full shadow-[0_10px_25px_rgba(0,0,0,0.6)] active:scale-95 transition-all border border-yellow-200 uppercase tracking-wider haptic-btn">
+                    CƯỢC
+                </button>
+                <span id="placedBetXocDiaLe" class="mt-2 text-xs sm:text-sm font-bold text-yellow-400 bg-yellow-500/10 px-3 py-0.5 rounded-full border border-yellow-500/20 hidden pointer-events-none">0đ</span>
+            </div>
+
         </div>
 
-        <!-- Betting Buttons -->
-        <div class="grid grid-cols-2 gap-3 w-full max-w-sm px-2">
-            <div class="relative">
-                <span id="placedBetXocDiaChan" class="bet-badge hidden pointer-events-none">0đ</span>
-                <button id="btnXocDiaChan" onclick="selectXocDiaSide('chan')" class="w-full py-2 sm:py-6 rounded-2xl bg-zinc-900/80 border border-white/5 text-center haptic-btn transition-all">
-                    <span class="block text-lg sm:text-2xl font-black text-white">CHẴN</span>
-                    <span class="text-[9px] sm:text-[10px] text-zinc-500 font-bold uppercase">x2.0</span>
-                </button>
+        <!-- PHẦN BOTTOM: Lịch Sử & Chuỗi Hash MD5 -->
+        <div class="flex flex-col items-center w-full shrink-0 gap-2">
+            <!-- Lịch sử phiên (Chấm tròn) -->
+            <div id="xocDiaHistory" class="flex gap-1.5 justify-center overflow-x-auto no-scrollbar max-w-lg mx-auto py-1 px-4 bg-black/30 rounded-full border border-white/5">
+                <!-- History dots -->
             </div>
-            <div class="relative">
-                <span id="placedBetXocDiaLe" class="bet-badge hidden pointer-events-none">0đ</span>
-                <button id="btnXocDiaLe" onclick="selectXocDiaSide('le')" class="w-full py-2 sm:py-6 rounded-2xl bg-zinc-900/80 border border-white/5 text-center haptic-btn transition-all">
-                    <span class="block text-lg sm:text-2xl font-black text-white">LẺ</span>
-                    <span class="text-[9px] sm:text-[10px] text-zinc-500 font-bold uppercase">x2.0</span>
+            
+            <!-- Chuỗi Hash MD5 -->
+            <div class="flex items-center justify-between w-full max-w-lg mx-auto bg-black/60 border border-yellow-500/40 rounded-full pl-4 pr-1 py-1 shadow-inner">
+                <span class="text-[10px] sm:text-xs text-yellow-500 font-black uppercase whitespace-nowrap mr-2">CHUỖI HASH</span>
+                <span class="text-[9px] sm:text-xs text-zinc-300 font-mono truncate flex-1 text-center select-all" id="xdMd5HashDisplay">c81e728d9d4c2f636f067f89cc14862c</span>
+                <button onclick="copyXDHash()" class="bg-gradient-to-r from-yellow-500 to-yellow-600 text-black font-black text-[10px] sm:text-xs px-3 py-1.5 rounded-full shadow hover:scale-105 active:scale-95 transition haptic-btn ml-2">
+                    COPY
                 </button>
             </div>
         </div>
 
-        <!-- Bet Input -->
-        <div class="w-full max-w-sm px-2 pb-4 shrink-0">
-            <div class="flex gap-2 bg-zinc-900 p-1.5 rounded-2xl border border-white/5">
-                <input type="number" id="xocDiaBetAmount" value="10000" class="flex-1 bg-transparent px-4 font-black text-yellow-500 outline-none text-xl w-0" />
-                <button onclick="playXocDia()" id="xocDiaSpinBtn" class="bg-red-600 text-white px-6 py-3 rounded-xl font-black text-sm haptic-btn">XÓC ĐĨA</button>
+        <!-- BẢNG ĐẶT CƯỢC NHANH XÓC ĐĨA (Hiển thị khi bấm CƯỢC) -->
+        <div id="quickXocDiaBetPanel" class="absolute inset-x-8 bottom-6 bg-zinc-900/95 backdrop-blur-xl border-2 border-yellow-500/50 rounded-3xl p-4 shadow-2xl hidden flex-col z-50 animate-slideUp">
+            <div class="flex justify-between items-center mb-3 border-b border-white/10 pb-2">
+                <span class="text-xs font-black text-yellow-500 uppercase tracking-wider" id="quickXocDiaBetTitle">ĐẶT CƯỢC XÓC ĐĨA</span>
+                <i class="fa-solid fa-xmark text-white text-lg cursor-pointer hover:text-red-500 transition" onclick="closeQuickXocDiaBet()"></i>
+            </div>
+            <div class="flex justify-center gap-2 overflow-x-auto no-scrollbar py-2 mb-3">
+                <div onclick="addXocDiaBetAmount(10000)" class="chip chip-10k scale-90 sm:scale-100 cursor-pointer">10K</div>
+                <div onclick="addXocDiaBetAmount(50000)" class="chip chip-50k scale-90 sm:scale-100 cursor-pointer">50K</div>
+                <div onclick="addXocDiaBetAmount(100000)" class="chip chip-100k scale-90 sm:scale-100 cursor-pointer">100K</div>
+                <div onclick="addXocDiaBetAmount(500000)" class="chip chip-500k scale-90 sm:scale-100 cursor-pointer">500K</div>
+                <div onclick="setXocDiaAllIn()" class="chip chip-max scale-90 sm:scale-100 cursor-pointer">MAX</div>
+            </div>
+            <div class="hitclub-input-group flex gap-2">
+                <input type="number" id="xocDiaBetAmount" value="10000" class="flex-1 bg-black/60 border border-yellow-500/30 rounded-xl px-4 py-2 text-white font-black text-lg outline-none focus:border-yellow-500" />
+                <button onclick="playXocDia()" id="xocDiaSpinBtn" class="bg-gradient-to-r from-yellow-400 to-yellow-600 text-black px-8 py-2.5 rounded-xl font-black text-sm haptic-btn shadow-lg hover:scale-105 active:scale-95 transition">XÁC NHẬN</button>
             </div>
         </div>
+
     </div>
 </div>
 
@@ -396,6 +693,8 @@
         <div class="text-center shrink-0">
             <div id="bauCuaPhaseText" class="text-[9px] text-zinc-500 uppercase font-black tracking-widest mb-1">Đang đặt cược</div>
             <div id="bauCuaCountdown" class="text-4xl font-black text-yellow-400 font-mono">35</div>
+            <!-- Lịch sử Bầu Cua -->
+            <div id="bauCuaHistory" class="flex gap-1 justify-center mt-2 opacity-80 scale-75"></div>
         </div>
 
         <!-- Result Dices -->
@@ -441,9 +740,9 @@
 
         <!-- Bet Input -->
         <div class="w-full max-w-sm px-2 pb-4 shrink-0">
-            <div class="flex gap-2 bg-zinc-900 p-1.5 rounded-2xl border border-white/5">
-                <input type="number" id="bauCuaBetAmount" value="10000" class="flex-1 bg-transparent px-4 font-black text-yellow-500 outline-none text-xl w-0" />
-                <button onclick="playBauCua()" id="playBauCuaBtn" class="bg-emerald-600 text-white px-6 py-3 rounded-xl font-black text-sm haptic-btn">ĐẶT CƯỢC</button>
+            <div class="hitclub-input-group">
+                <input type="number" id="bauCuaBetAmount" value="10000" />
+                <button onclick="playBauCua()" id="playBauCuaBtn" class="bg-gradient-to-b from-emerald-500 to-emerald-800 text-white px-6 py-3 rounded-xl font-black text-sm haptic-btn shadow-lg">ĐẶT CƯỢC</button>
             </div>
         </div>
     </div>

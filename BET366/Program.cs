@@ -35,7 +35,7 @@ if (args.Contains("--migrate"))
 {
     using (var scope = app.Services.CreateScope())
     {
-        var sqlServerConn = builder.Configuration.GetConnectionString("SqlServerSource") 
+        var sqlServerConn = builder.Configuration.GetConnectionString("SqlServerSource")
                             ?? "Server=(localdb)\\MSSQLLocalDB;Database=BET366DB;Trusted_Connection=True;TrustServerCertificate=True;";
         var pgConn = builder.Configuration.GetConnectionString("DefaultConnection");
         if (string.IsNullOrEmpty(pgConn))
@@ -52,9 +52,10 @@ using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     var db = services.GetRequiredService<ApplicationDbContext>();
-    
+
     // Fix Database Schema if needed (PostgreSQL syntax)
-    try {
+    try
+    {
         db.Database.ExecuteSqlRaw(@"
             DO $$ 
             BEGIN 
@@ -78,9 +79,10 @@ using (var scope = app.Services.CreateScope())
                     ALTER TABLE ""Deposits"" ADD COLUMN ""SenderName"" VARCHAR(100) NULL; 
                 END IF; 
             END $$;");
-        
+
         // SlotHistories Table
-        try {
+        try
+        {
             db.Database.ExecuteSqlRaw(@"
                 CREATE TABLE IF NOT EXISTS ""SlotHistories"" (
                     ""Id"" SERIAL PRIMARY KEY,
@@ -91,33 +93,41 @@ using (var scope = app.Services.CreateScope())
                     ""IsJackpot"" BOOLEAN NOT NULL,
                     ""CreatedAt"" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
                 );");
-        } catch { }
+        }
+        catch { }
 
         // Jackpot Config
-        try {
+        try
+        {
             db.Database.ExecuteSqlRaw(@"
                 INSERT INTO ""SystemConfigs"" (""Id"", ""ConfigKey"", ""ConfigValue"", ""Description"", ""UpdatedAt"") 
                 SELECT 15, 'JackpotValue', '100000000', 'Giá trị nổ hũ', CURRENT_TIMESTAMP
                 WHERE NOT EXISTS (SELECT 1 FROM ""SystemConfigs"" WHERE ""ConfigKey"" = 'JackpotValue');");
-        } catch { }
+        }
+        catch { }
 
         // Xoc Dia Config
-        try {
+        try
+        {
             db.Database.ExecuteSqlRaw(@"
                 INSERT INTO ""SystemConfigs"" (""Id"", ""ConfigKey"", ""ConfigValue"", ""Description"", ""UpdatedAt"") 
                 SELECT 16, 'XocDiaBettingDuration', '30', 'Thời gian đặt cược Xóc Đĩa (giây)', CURRENT_TIMESTAMP
                 WHERE NOT EXISTS (SELECT 1 FROM ""SystemConfigs"" WHERE ""ConfigKey"" = 'XocDiaBettingDuration');");
-        } catch { }
+        }
+        catch { }
         // Bau Cua Config
-        try {
+        try
+        {
             db.Database.ExecuteSqlRaw(@"
                 INSERT INTO ""SystemConfigs"" (""Id"", ""ConfigKey"", ""ConfigValue"", ""Description"", ""UpdatedAt"") 
                 SELECT 17, 'BauCuaBettingDuration', '35', 'Thời gian đặt cược Bầu Cua (giây)', CURRENT_TIMESTAMP
                 WHERE NOT EXISTS (SELECT 1 FROM ""SystemConfigs"" WHERE ""ConfigKey"" = 'BauCuaBettingDuration');");
-        } catch { }
-    } catch (Exception ex) { Console.WriteLine("⚠️ DB Patch error: " + ex.Message); }
-    
-    try 
+        }
+        catch { }
+    }
+    catch (Exception ex) { Console.WriteLine("⚠️ DB Patch error: " + ex.Message); }
+
+    try
     {
         db.Database.EnsureCreated(); // Ensure schema exists for new DB
     }
@@ -125,7 +135,7 @@ using (var scope = app.Services.CreateScope())
     {
         Console.WriteLine($"⚠️ DB EnsureCreated warning: {ex.Message}");
     }
-    
+
     try
     {
         // Manual Seed Check - Rename or Create Admin
@@ -144,13 +154,10 @@ using (var scope = app.Services.CreateScope())
             db.SaveChanges();
             Console.WriteLine("✅ Đã tạo tài khoản Admin 0708069602.");
         }
-         if (adminUser != null)
+        else if (adminUser.UserStatus != 1)
         {
-            adminUser.Username = "0708069602";
-            adminUser.PasswordHash = BCrypt.Net.BCrypt.HashPassword("0708069602");
             adminUser.UserStatus = 1;
             db.SaveChanges();
-            Console.WriteLine("✅ Đã cập nhật Admin 0708069602.");
         }
 
         // Seed System Config

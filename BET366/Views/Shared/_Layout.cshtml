@@ -8,10 +8,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
-<body class="min-h-screen text-white pb-24 bg-black">
-    <div class="fixed inset-0 pointer-events-none opacity-20 z-0">
-        <div class="absolute top-0 left-1/4 w-64 h-64 bg-yellow-500 blur-[120px]"></div>
-        <div class="absolute bottom-0 right-1/4 w-64 h-64 bg-blue-500 blur-[120px]"></div>
+<body class="min-h-screen text-white pb-24 bg-[#0a0000] font-sans">
+    <!-- Hitclub style background -->
+    <div class="fixed inset-0 pointer-events-none z-0 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1595152772835-219674b2a8a6?q=80&w=2000&auto=format&fit=crop'); opacity: 0.15; mix-blend-mode: luminosity;"></div>
+    <div class="fixed inset-0 pointer-events-none opacity-40 z-0">
+        <div class="absolute top-0 left-1/4 w-96 h-96 bg-[#8a0000] blur-[150px]"></div>
+        <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-[#d4af37] blur-[150px]"></div>
     </div>
 
     @RenderBody()

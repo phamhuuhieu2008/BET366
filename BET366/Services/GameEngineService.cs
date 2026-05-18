@@ -27,7 +27,7 @@ namespace BET366.Services
     public class GameState
     {
         public int TimeLeft { get; set; } = 40;
-        public string Phase { get; set; } = "betting"; 
+        public string Phase { get; set; } = "betting";
         public int[] Dice { get; set; } = { 1, 2, 3 };
         public int Total { get; set; } = 6;
         public string ResultOverride { get; set; } = "random";
@@ -51,10 +51,22 @@ namespace BET366.Services
 
         public GameState State => _state;
 
-        public void SetResultOverride(string mode)
+        public void SetTaiXiuOverride(string mode)
         {
             lock (_lock) { _state.ResultOverride = mode; }
         }
+
+        public void SetXocDiaOverride(string mode)
+        {
+            lock (_lock) { _state.XocDiaOverride = mode; }
+        }
+
+        public void SetBauCuaOverride(string mode)
+        {
+            lock (_lock) { _state.BauCuaOverride = mode; }
+        }
+
+        public void SetResultOverride(string mode) => SetTaiXiuOverride(mode);
 
         public (int d1, int d2, int d3, int total) RollDice()
         {
@@ -62,15 +74,16 @@ namespace BET366.Services
             {
                 int d1, d2, d3;
                 var mode = _state.ResultOverride;
-
+                int attempts = 0;
                 do
                 {
                     d1 = _rng.Next(1, 7);
                     d2 = _rng.Next(1, 7);
                     d3 = _rng.Next(1, 7);
+                    attempts++;
                 } while (
-                    (mode == "left" && (d1 + d2 + d3 < 4 || d1 + d2 + d3 > 10)) ||
-                    (mode == "right" && (d1 + d2 + d3 < 11 || d1 + d2 + d3 > 17))
+                    ((mode == "left" && (d1 + d2 + d3 < 4 || d1 + d2 + d3 > 10)) ||
+                    (mode == "right" && (d1 + d2 + d3 < 11 || d1 + d2 + d3 > 17))) && attempts < 100
                 );
 
                 var total = d1 + d2 + d3;
@@ -139,26 +152,29 @@ namespace BET366.Services
             {
                 var coins = new int[4];
                 var mode = _state.XocDiaOverride;
-                
+
                 bool valid = false;
                 int redCount = 0; // Khai báo biến redCount một lần duy nhất
-                while (!valid) {
+                int attempts = 0;
+                while (!valid && attempts < 100)
+                {
                     for (int i = 0; i < 4; i++) coins[i] = _rng.Next(0, 2);
                     redCount = 0; // Reset giá trị cho mỗi lần lặp
-                    foreach(var c in coins) if(c == 1) redCount++;
+                    foreach (var c in coins) if (c == 1) redCount++;
                     string result = redCount % 2 == 0 ? "chan" : "le";
-                    
+
                     if (mode == "random" || mode == result) valid = true;
+                    attempts++;
                 }
 
                 _state.XocDia.Coins = coins;
                 _state.XocDiaOverride = "random"; // Reset sau khi dùng
                 _state.XocDia.Phase = "rolling";
                 _state.XocDia.TimeLeft = 10;
-                
-                _state.XocDia.History.Add(redCount % 2 == 0 ? "chan" : "le");
+
+                _state.XocDia.History.Add(redCount % 2 == 0 ? "C" : "L");
                 if (_state.XocDia.History.Count > 20) _state.XocDia.History.RemoveAt(0);
-                
+
                 return coins;
             }
         }
@@ -185,10 +201,10 @@ namespace BET366.Services
                 _state.BauCuaOverride = "random"; // Reset sau khi dùng
                 _state.BauCua.Phase = "rolling";
                 _state.BauCua.TimeLeft = 10;
-                
+
                 _state.BauCua.History.Add(res);
                 if (_state.BauCua.History.Count > 20) _state.BauCua.History.RemoveAt(0);
-                
+
                 return res;
             }
         }

@@ -22,23 +22,34 @@ namespace BET366.Hubs
 
         public static int OnlineCount => _onlineCount;
 
-        public async Task JoinGame(string username)
+        public async Task JoinGame()
         {
+            var username = Context.User?.Identity?.Name;
+            if (string.IsNullOrEmpty(username)) return;
+
             await Groups.AddToGroupAsync(Context.ConnectionId, $"user_{username}");
             Context.Items["username"] = username;
 
-            // Send current state immediately
-            var state = _engine.State;
-            await Clients.Caller.SendAsync("TimerUpdate", new { timeLeft = state.TimeLeft, phase = state.Phase });
-            await Clients.Caller.SendAsync("XocDiaTimerUpdate", new { timeLeft = state.XocDia.TimeLeft, phase = state.XocDia.Phase });
-            await Clients.Caller.SendAsync("BauCuaTimerUpdate", new { timeLeft = state.BauCua.TimeLeft, phase = state.BauCua.Phase });
-            await Clients.Caller.SendAsync("TotalBetsUpdate", new { leftTotal = state.TotalBetLeft, rightTotal = state.TotalBetRight });
-            await Clients.Caller.SendAsync("GameHistoryUpdate", state.GameHistory);
+            await SendCurrentState(Clients.Caller);
         }
 
         public async Task JoinAdmin()
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, "admin");
+            await SendCurrentState(Clients.Caller);
+        }
+
+        private async Task SendCurrentState(ISingleClientProxy client)
+        {
+            var state = _engine.State;
+            await client.SendAsync("TimerUpdate", new { timeLeft = state.TimeLeft, phase = state.Phase });
+            await client.SendAsync("XocDiaTimerUpdate", new { timeLeft = state.XocDia.TimeLeft, phase = state.XocDia.Phase });
+            await client.SendAsync("BauCuaTimerUpdate", new { timeLeft = state.BauCua.TimeLeft, phase = state.BauCua.Phase });
+            await client.SendAsync("TotalBetsUpdate", new { leftTotal = state.TotalBetLeft, rightTotal = state.TotalBetRight });
+            await client.SendAsync("GameHistoryUpdate", state.GameHistory);
+            await client.SendAsync("XocDiaHistoryUpdate", state.XocDia.History);
+            await client.SendAsync("BauCuaHistoryUpdate", state.BauCua.History);
+            await client.SendAsync("OnlineCountUpdate", _onlineCount);
         }
 
         public async Task<object> SpinSlot(long amount)
@@ -189,11 +200,14 @@ namespace BET366.Hubs
             if (amount < 1000) return new { success = false, message = "Cược tối thiểu 1,000đ" };
             if (_engine.State.XocDia.Phase != "betting") return new { success = false, message = "Đã hết thời gian cược!" };
 
-            user.Balance -= amount;
-            _engine.AddXocDiaBet(side, username, amount);
-            await db.SaveChangesAsync();
-
-            return new { success = true, balance = user.Balance };
+            try {
+                user.Balance -= amount;
+                await db.SaveChangesAsync(); // Lưu DB trước để đảm bảo tính nhất quán
+                _engine.AddXocDiaBet(side, username, amount);
+                return new { success = true, balance = user.Balance };
+            } catch {
+                return new { success = false, message = "Lỗi hệ thống khi xử lý giao dịch!" };
+            }
         }
 
         public async Task<object> PlayBauCua(string choice, long amount)
@@ -209,11 +223,14 @@ namespace BET366.Hubs
             if (amount < 1000) return new { success = false, message = "Cược tối thiểu 1,000đ" };
             if (_engine.State.BauCua.Phase != "betting") return new { success = false, message = "Đã hết thời gian cược!" };
 
-            user.Balance -= amount;
-            _engine.AddBauCuaBet(choice, username, amount);
-            await db.SaveChangesAsync();
-
-            return new { success = true, balance = user.Balance };
+            try {
+                user.Balance -= amount;
+                await db.SaveChangesAsync();
+                _engine.AddBauCuaBet(choice, username, amount);
+                return new { success = true, balance = user.Balance };
+            } catch {
+                return new { success = false, message = "Lỗi hệ thống khi xử lý giao dịch!" };
+            }
         }
 
         [Authorize(Roles = "Admin")]
@@ -225,15 +242,17 @@ namespace BET366.Hubs
         [Authorize(Roles = "Admin")]
         public void SetBauCuaOverride(string mode) => _engine.State.BauCuaOverride = mode;
 
-        public override Task OnConnectedAsync()
+        public override async Task OnConnectedAsync()
         {
             Interlocked.Increment(ref _onlineCount);
-            return base.OnConnectedAsync();
+            await Clients.All.SendAsync("OnlineCountUpdate", _onlineCount);
+            await base.OnConnectedAsync();
         }
 
         public override async Task OnDisconnectedAsync(Exception? ex)
         {
             Interlocked.Decrement(ref _onlineCount);
+            await Clients.All.SendAsync("OnlineCountUpdate", _onlineCount);
             var username = Context.Items["username"]?.ToString();
             if (!string.IsNullOrEmpty(username))
                 await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"user_{username}");

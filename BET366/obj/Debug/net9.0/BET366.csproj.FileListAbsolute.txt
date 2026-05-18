@@ -462,5 +462,5 @@ C:\Users\ADMIN\Downloads\BET366\BET366\bin\Debug\net9.0\Npgsql.EntityFrameworkCo
 C:\Users\ADMIN\Downloads\BET366\BET366\obj\Debug\net9.0\BET366.sourcelink.json
 C:\Users\ADMIN\Downloads\BET366\BET366\obj\Debug\net9.0\compressed\eokcp9o018-{0}-319zdokth2-319zdokth2.gz
 C:\Users\ADMIN\Downloads\BET366\BET366\obj\Debug\net9.0\compressed\o8scigdhcy-{0}-319zdokth2-319zdokth2.gz
-C:\Users\ADMIN\Downloads\BET366\BET366\obj\Debug\net9.0\compressed\jtp2u2rxr0-{0}-wog0a621ne-wog0a621ne.gz
-C:\Users\ADMIN\Downloads\BET366\BET366\obj\Debug\net9.0\compressed\3i00nigyqz-{0}-m2ymg0snpr-m2ymg0snpr.gz
+C:\Users\ADMIN\Downloads\BET366\BET366\obj\Debug\net9.0\compressed\jtp2u2rxr0-{0}-n3n7jrvv7v-n3n7jrvv7v.gz
+C:\Users\ADMIN\Downloads\BET366\BET366\obj\Debug\net9.0\compressed\3i00nigyqz-{0}-smxx7ml6ya-smxx7ml6ya.gz
